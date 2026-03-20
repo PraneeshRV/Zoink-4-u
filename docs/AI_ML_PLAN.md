@@ -1,12 +1,12 @@
-# 🤖 AI/ML Integration Plan — Zoink-4-u
+# AI/ML Integration Plan - Zoink-4-u
 
 ## Overview
 
-AI/ML is not a bolt-on for Zoink-4-u — it's the **core engine** that powers three critical capabilities:
+AI/ML sits at the core of Zoink-4-u, driving three critical capabilities:
 
-1. **Dynamic Premium Pricing** — Personalized, fair weekly premiums
-2. **Intelligent Fraud Detection** — Real-time anomaly detection on every claim  
-3. **Predictive Disruption Forecasting** — Forecasting next week's risk for proactive planning
+1. Dynamic Premium Pricing: Personalized, fair weekly premiums
+2. Intelligent Fraud Detection: Real-time anomaly detection on every claim
+3. Predictive Disruption Forecasting: Forecasting next week's risk for proactive planning
 
 ---
 
@@ -24,7 +24,7 @@ flowchart LR
     C[Historical Weather] --> D
     D --> E[XGBoost Risk Model]
     E --> F[Risk Score 0-1]
-    F --> G[Premium = Base × Risk Multiplier]
+    F --> G[Premium = Base x Risk Multiplier]
 ```
 
 ### Input Features
@@ -35,7 +35,7 @@ flowchart LR
 | `season_code` | Calendar | Categorical | Current season (monsoon, winter, summer, dry) |
 | `monthly_avg_rainfall` | OpenWeatherMap | Float | Zone's avg rainfall for current month |
 | `avg_aqi_30d` | WAQI | Float | Zone's 30-day average AQI |
-| `worker_tenure_days` | Database | Integer | How long the worker has been on platform |
+| `worker_tenure_days` | Database | Integer | How long the worker has been on the platform |
 | `past_claim_count` | Database | Integer | Number of past approved claims |
 | `past_claim_ratio` | Database | Float | Claims / weeks subscribed |
 | `trust_score` | Trust Engine | Float | GigShield Trust Score (0-100) |
@@ -46,12 +46,12 @@ flowchart LR
 
 | Aspect | Details |
 |--------|---------|
-| **Algorithm** | XGBoost Regressor |
-| **Target Variable** | Expected claim probability (0-1) for the upcoming week |
-| **Training Data** | Synthetic dataset: 10,000 worker-weeks with simulated claims based on real weather patterns |
-| **Output** | Risk probability → mapped to premium via: `Premium = Base_Rate × (1 + risk_prob × max_multiplier)` |
-| **Retraining** | Weekly batch job with latest claim + weather data |
-| **Fallback** | If model fails, use rule-based formula: `Base × Zone_Factor × Season_Factor × Trust_Factor` |
+| Algorithm | XGBoost Regressor |
+| Target Variable | Expected claim probability (0-1) for the upcoming week |
+| Training Data | Synthetic dataset: 10,000 worker-weeks with simulated claims based on real weather patterns |
+| Output | Risk probability mapped to premium via: `Premium = Base_Rate * (1 + risk_prob * max_multiplier)` |
+| Retraining | Weekly batch job with latest claim + weather data |
+| Fallback | If model fails, use rule-based formula: `Base * Zone_Factor * Season_Factor * Trust_Factor` |
 
 ### Premium Calculation Pipeline
 
@@ -86,9 +86,9 @@ def calculate_premium(worker_id, plan_tier):
 ```
 
 ### Validation Strategy
-- **A/B test** (simulated): Compare ML-priced vs flat-rate premiums on synthetic data
-- **Fairness check**: Ensure no systematic bias against specific zones or new workers
-- **Accuracy metric**: MAE between predicted claims and actual claims (target < 0.15)
+- A/B test (simulated): Compare ML-priced vs flat-rate premiums on synthetic data
+- Fairness check: Ensure no systematic bias against specific zones or new workers
+- Accuracy metric: MAE between predicted claims and actual claims (target < 0.15)
 
 ---
 
@@ -103,12 +103,12 @@ Parametric insurance is vulnerable to fraud: fake location data, claiming during
 flowchart TD
     A[New Auto-Claim] --> B[Layer 1: Rule-Based Checks]
     B -->|Pass| C[Layer 2: ML Anomaly Detection]
-    B -->|Fail| G[❌ Reject Immediately]
+    B -->|Fail| G[Reject Immediately]
     C -->|Pass| D[Layer 3: Trust Score Check]
-    C -->|Flag| H[⚠️ Queue for Manual Review]
-    D -->|High Trust| E[✅ Auto-Approve]
+    C -->|Flag| H[Queue for Manual Review]
+    D -->|High Trust| E[Auto-Approve]
     D -->|Low Trust| H
-    E --> F[💰 Payout]
+    E --> F[Payout]
 ```
 
 ### Layer 1: Rule-Based Filters (Fast, Deterministic)
@@ -125,11 +125,11 @@ flowchart TD
 
 | Aspect | Details |
 |--------|---------|
-| **Algorithm** | Isolation Forest |
-| **Input Features** | claim_frequency, avg_payout, zone_peer_comparison, gps_consistency_score, claim_timing_pattern |
-| **Output** | Anomaly score (-1 to 1); > 0.7 = suspicious |
-| **Training** | Trained on synthetic "normal" claim patterns; anomalies are outliers |
-| **Speed** | < 100ms inference time — must not delay payout pipeline |
+| Algorithm | Isolation Forest |
+| Input Features | claim_frequency, avg_payout, zone_peer_comparison, gps_consistency_score, claim_timing_pattern |
+| Output | Anomaly score (-1 to 1); > 0.7 = suspicious |
+| Training | Trained on synthetic "normal" claim patterns; anomalies are outliers |
+| Speed | < 100ms inference time, must not delay payout pipeline |
 
 ```python
 # Pseudocode for fraud check
@@ -163,7 +163,7 @@ def check_fraud(claim_data):
 
 | Scenario | Detection Method |
 |----------|-----------------|
-| GPS spoofing (fake location app) | GPS trajectory analysis — teleportation detection |
+| GPS spoofing (fake location app) | GPS trajectory analysis, teleportation detection |
 | Claiming on clear days | Weather API cross-check with zone + timestamp |
 | Colluding workers (organized fraud) | Cluster analysis on claim patterns across linked accounts |
 | Repeated micro-claims | Frequency analysis vs zone average |
@@ -174,7 +174,7 @@ def check_fraud(claim_data):
 ## Model 3: GigShield Trust Score Engine
 
 ### Problem
-We need a **dynamic reputation system** that rewards honest workers and penalizes suspicious ones — creating a long-term incentive for genuine claims.
+We need a dynamic reputation system that rewards honest workers and penalizes suspicious ones, creating a long-term incentive for genuine claims.
 
 ### Score Calculation
 
@@ -189,63 +189,63 @@ Trust Score = min(100, max(0,
 
 Where:
   base_score           = 50 (all workers start here)
-  tenure_bonus         = min(20, tenure_months × 2)
-  claim_ratio_factor   = max(-30, (zone_avg_rate - personal_rate) × 50)
-  fraud_flag_penalty   = flagged_claims × (-15)
-  consistency_bonus    = consecutive_clean_months × 3 (max 15)
+  tenure_bonus         = min(20, tenure_months * 2)
+  claim_ratio_factor   = max(-30, (zone_avg_rate - personal_rate) * 50)
+  fraud_flag_penalty   = flagged_claims * (-15)
+  consistency_bonus    = consecutive_clean_months * 3 (max 15)
 ```
 
 ### Trust Score Tiers
 
 | Tier | Score Range | Behavior |
 |------|------------|----------|
-| 🟢 **Trusted** | 70-100 | Instant auto-approval, premium discounts |
-| 🟡 **Standard** | 40-69 | Normal processing, standard premiums |
-| 🔴 **Watch** | 0-39 | All claims manually reviewed, no premium discounts |
+| Trusted | 70-100 | Instant auto-approval, premium discounts |
+| Standard | 40-69 | Normal processing, standard premiums |
+| Watch | 0-39 | All claims manually reviewed, no premium discounts |
 
 ### Score Impact on User Experience
 
 | Event | Score Change |
 |-------|-------------|
 | Week completed with no fraudulent activity | +2 |
-| Legitimate claim approved & paid | +1 |
+| Legitimate claim approved and paid | +1 |
 | Claim flagged but later approved manually | +0 (no penalty) |
 | Claim rejected for fraud | -15 |
 | Consecutive 4 clean weeks | +5 bonus |
-| Account confirmed as fraudulent | Score → 0, policy cancelled |
+| Account confirmed as fraudulent | Score set to 0, policy cancelled |
 
 ---
 
 ## Model 4: Disruption Forecaster
 
-### Problem  
-Reactive insurance only kicks in after disruption. **Proactive forecasting** lets us plan better: suggest enhanced coverage, prepare for high-claim weeks, adjust pricing dynamically.
+### Problem
+Reactive insurance only kicks in after disruption. Proactive forecasting lets us plan better: suggest enhanced coverage, prepare for high-claim weeks, adjust pricing dynamically.
 
 ### Approach
 
 | Aspect | Details |
 |--------|---------|
-| **Algorithm** | LSTM (Long Short-Term Memory) time-series model |
-| **Input** | 90-day weather history per zone (daily: rainfall, temperature, AQI, humidity) |
-| **Output** | Per-zone disruption probability for each of the next 7 days |
-| **Granularity** | Zone-level (pincode) |
-| **Update Frequency** | Daily batch prediction |
+| Algorithm | LSTM (Long Short-Term Memory) time-series model |
+| Input | 90-day weather history per zone (daily: rainfall, temperature, AQI, humidity) |
+| Output | Per-zone disruption probability for each of the next 7 days |
+| Granularity | Zone-level (pincode) |
+| Update Frequency | Daily batch prediction |
 
 ### Use Cases
 
 | Consumer | What They See |
-|----------|-------------|
-| **Workers** | "⚠️ 70% chance of heavy rain on Tuesday. Consider enhanced coverage!" |
-| **Admins** | "Expected 45 claims next week across Mumbai zones. Reserve ₹18,000" |
-| **Pricing Engine** | Dynamic adjustment: high forecast → slight premium increase for new subscriptions |
+|----------|---------------|
+| Workers | "70% chance of heavy rain on Tuesday. Consider enhanced coverage." |
+| Admins | "Expected 45 claims next week across Mumbai zones. Reserve Rs. 18,000" |
+| Pricing Engine | Dynamic adjustment: high forecast leads to a slight premium increase for new subscriptions |
 
 ### Implementation Plan
 
 | Phase | What We Build |
-|-------|--------------|
-| **Phase 1 (now)** | Rule-based forecasting using weather forecast APIs (7-day forecasts) |
-| **Phase 2** | Train LSTM on historical data, show predictions alongside API forecasts |
-| **Phase 3** | Full ML-driven forecasting with confidence intervals |
+|-------|---------------|
+| Phase 1 (now) | Rule-based forecasting using weather forecast APIs (7-day forecasts) |
+| Phase 2 | Train LSTM on historical data, show predictions alongside API forecasts |
+| Phase 3 | Full ML-driven forecasting with confidence intervals |
 
 ---
 
@@ -255,11 +255,11 @@ Reactive insurance only kicks in after disruption. **Proactive forecasting** let
 
 | Data | Source | Real / Synthetic |
 |------|--------|-----------------|
-| Weather history | OpenWeatherMap API (free: 5 calls/min) | **Real** |
-| AQI history | WAQI API (free tier) | **Real** |
+| Weather history | OpenWeatherMap API (free: 5 calls/min) | Real |
+| AQI history | WAQI API (free tier) | Real |
 | Worker profiles | Generated based on real gig worker demographics | Synthetic |
 | Delivery earnings | Based on published average earnings data | Synthetic |
-| Claim patterns | Simulated based on weather → disruption correlation | Synthetic |
+| Claim patterns | Simulated based on weather to disruption correlation | Synthetic |
 | Fraud patterns | Modeled after known insurance fraud scenarios | Synthetic |
 
 ### Synthetic Data Generation Plan
@@ -290,14 +290,14 @@ for worker in synthetic_workers:
 
 | Phase | AI Component | Approach |
 |-------|-------------|----------|
-| **Phase 1** (Week 1-2) | Premium pricing | Rule-based formula (documented above) |
-| **Phase 1** (Week 1-2) | Disruption forecast | Weather forecast API integration (7-day) |
-| **Phase 2** (Week 3-4) | Premium pricing | XGBoost model trained on synthetic data |
-| **Phase 2** (Week 3-4) | Fraud detection | Rule-based filters + basic Isolation Forest |
-| **Phase 2** (Week 3-4) | Trust scoring | Heuristic formula implementation |
-| **Phase 3** (Week 5-6) | Fraud detection | Enhanced ML model with more features |
-| **Phase 3** (Week 5-6) | Disruption forecast | LSTM time-series model |
-| **Phase 3** (Week 5-6) | Personalization | Coverage recommendation engine |
+| Phase 1 (Week 1-2) | Premium pricing | Rule-based formula (documented above) |
+| Phase 1 (Week 1-2) | Disruption forecast | Weather forecast API integration (7-day) |
+| Phase 2 (Week 3-4) | Premium pricing | XGBoost model trained on synthetic data |
+| Phase 2 (Week 3-4) | Fraud detection | Rule-based filters + basic Isolation Forest |
+| Phase 2 (Week 3-4) | Trust scoring | Heuristic formula implementation |
+| Phase 3 (Week 5-6) | Fraud detection | Enhanced ML model with more features |
+| Phase 3 (Week 5-6) | Disruption forecast | LSTM time-series model |
+| Phase 3 (Week 5-6) | Personalization | Coverage recommendation engine |
 
 ---
 

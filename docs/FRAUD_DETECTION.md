@@ -1,19 +1,19 @@
-# 🛡️ Fraud Detection Strategy — Zoink-4-u
+# Fraud Detection Strategy - Zoink-4-u
 
 ## Why Fraud Detection Is Critical
 
-Parametric insurance is powerful because it's automated — but automation creates fraud opportunities:
+Parametric insurance is powerful because it's automated, but automation creates fraud opportunities:
 
 | Fraud Type | Risk Level | Impact If Undetected |
 |-----------|-----------|---------------------|
-| GPS spoofing (fake location) | 🔴 High | Worker claims for a zone they're not in |
-| Claiming on clear days | 🔴 High | Free money for non-events |
-| Duplicate claims | 🟡 Medium | Same event paid multiple times |
-| Inflated shift hours | 🟡 Medium | Higher payouts than entitled |
-| Organized fraud rings | 🔴 High | Multiple accounts, systematic theft |
-| Identity fraud | 🟡 Medium | Fake accounts claiming repeatedly |
+| GPS spoofing (fake location) | High | Worker claims for a zone they're not in |
+| Claiming on clear days | High | Free money for non-events |
+| Duplicate claims | Medium | Same event paid multiple times |
+| Inflated shift hours | Medium | Higher payouts than entitled |
+| Organized fraud rings | High | Multiple accounts, systematic theft |
+| Identity fraud | Medium | Fake accounts claiming repeatedly |
 
-**Our goal:** Block fraudulent claims automatically while ensuring legitimate workers get paid **instantly** with zero friction.
+Our goal is to block fraudulent claims automatically while ensuring legitimate workers get paid instantly with zero friction.
 
 ---
 
@@ -21,7 +21,7 @@ Parametric insurance is powerful because it's automated — but automation creat
 
 ```mermaid
 flowchart TD
-    A["🔔 Auto-Claim Triggered"] --> L1
+    A["Auto-Claim Triggered"] --> L1
     
     subgraph L1["Layer 1: Rule-Based Filters (< 50ms)"]
         R1["Weather Cross-Validation"]
@@ -32,7 +32,7 @@ flowchart TD
     end
     
     L1 -->|All Pass| L2
-    L1 -->|Any Fail| REJ["❌ Instant Rejection"]
+    L1 -->|Any Fail| REJ["Instant Rejection"]
     
     subgraph L2["Layer 2: ML Anomaly Detection (< 200ms)"]
         M1["Isolation Forest Model"]
@@ -41,7 +41,7 @@ flowchart TD
     end
     
     L2 -->|Score < 0.5| L3
-    L2 -->|Score 0.5-0.7| FLAG["⚠️ Flagged for Review"]
+    L2 -->|Score 0.5-0.7| FLAG["Flagged for Review"]
     L2 -->|Score > 0.7| REJ
     
     subgraph L3["Layer 3: Trust Score Gate"]
@@ -51,10 +51,10 @@ flowchart TD
         T4["< 40: Manual review"]
     end
     
-    L3 -->|Approved| APPROVE["✅ Approved → Payout"]
+    L3 -->|Approved| APPROVE["Approved, Payout"]
     L3 -->|Review Needed| FLAG
     
-    FLAG --> ADMIN["👨‍💼 Admin Review Queue"]
+    FLAG --> ADMIN["Admin Review Queue"]
     ADMIN -->|Approve| APPROVE
     ADMIN -->|Reject| REJ
 ```
@@ -63,11 +63,11 @@ flowchart TD
 
 ## Layer 1: Rule-Based Filters
 
-These are **fast, deterministic checks** that run in under 50ms. They catch obvious fraud before the ML model even needs to run.
+These are fast, deterministic checks that run in under 50ms. They catch obvious fraud before the ML model even needs to run.
 
 ### Check 1: Weather Cross-Validation
 
-**Purpose:** Verify that a qualifying weather event ACTUALLY occurred at the claimed location and time.
+Purpose: Verify that a qualifying weather event actually occurred at the claimed location and time.
 
 ```python
 def validate_weather(zone_id, trigger_type, claimed_time):
@@ -96,7 +96,7 @@ def validate_weather(zone_id, trigger_type, claimed_time):
 
 ### Check 2: Duplicate Claim Prevention
 
-**Purpose:** Ensure the same worker can't get paid twice for the same event.
+Purpose: Ensure the same worker can't get paid twice for the same event.
 
 ```python
 def check_duplicate(worker_id, event_id):
@@ -115,7 +115,7 @@ def check_duplicate(worker_id, event_id):
 
 ### Check 3: Coverage Status
 
-**Purpose:** Confirm the worker has a valid, paid, active policy.
+Purpose: Confirm the worker has a valid, paid, active policy.
 
 | Check | Pass Condition |
 |-------|---------------|
@@ -126,7 +126,7 @@ def check_duplicate(worker_id, event_id):
 
 ### Check 4: Cooldown Period
 
-**Purpose:** Prevent rapid-fire claims from the same worker.
+Purpose: Prevent rapid-fire claims from the same worker.
 
 | Rule | Value |
 |------|-------|
@@ -136,7 +136,7 @@ def check_duplicate(worker_id, event_id):
 
 ### Check 5: Zone Boundary
 
-**Purpose:** Verify the worker's GPS data places them within their registered zone.
+Purpose: Verify the worker's GPS data places them within their registered zone.
 
 ```python
 def validate_zone(worker_gps, registered_zone):
@@ -160,7 +160,7 @@ def validate_zone(worker_gps, registered_zone):
 
 ### Isolation Forest Model
 
-The Isolation Forest detects **outliers** in worker claim patterns. Normal workers cluster together; fraudulent behavior creates anomalies.
+The Isolation Forest detects outliers in worker claim patterns. Normal workers cluster together; fraudulent behavior creates anomalies.
 
 #### Input Features
 
@@ -196,25 +196,25 @@ model = IsolationForest(
 model.fit(features)
 
 # Scoring: Lower score = more anomalous
-# Score < -0.5 → Highly suspicious (anomaly_score > 0.75)
-# Score -0.5 to 0 → Moderately suspicious (anomaly_score 0.5-0.75)
-# Score > 0 → Normal behavior (anomaly_score < 0.5)
+# Score < -0.5 -> Highly suspicious (anomaly_score > 0.75)
+# Score -0.5 to 0 -> Moderately suspicious (anomaly_score 0.5-0.75)
+# Score > 0 -> Normal behavior (anomaly_score < 0.5)
 ```
 
 #### Score Interpretation
 
 | Anomaly Score | Category | Action |
 |--------------|----------|--------|
-| 0.0 – 0.3 | ✅ Normal | Auto-approve (proceed to Layer 3) |
-| 0.3 – 0.5 | ⚠️ Mild anomaly | Auto-approve but log for monitoring |
-| 0.5 – 0.7 | 🟡 Suspicious | Flag for admin review |
-| 0.7 – 1.0 | 🔴 Highly anomalous | Auto-reject + admin alert |
+| 0.0 to 0.3 | Normal | Auto-approve (proceed to Layer 3) |
+| 0.3 to 0.5 | Mild anomaly | Auto-approve but log for monitoring |
+| 0.5 to 0.7 | Suspicious | Flag for admin review |
+| 0.7 to 1.0 | Highly anomalous | Auto-reject + admin alert |
 
 ---
 
 ## Layer 3: GigShield Trust Score
 
-A **dynamic reputation score** that evolves with worker behavior over time.
+A dynamic reputation score that evolves with worker behavior over time.
 
 ### Score Components
 
@@ -238,28 +238,28 @@ Trust Score = clamp(0, 100,
 | Claim Behavior | Compared to zone peers; excessive claiming = negative | -15 to +10 |
 | Community | Bonus for verified identity, referrals | 0 to +5 |
 
-### Trust Tiers & Impact
+### Trust Tiers and Impact
 
 | Tier | Score | Claim Processing | Premium Impact |
 |------|-------|-----------------|----------------|
-| 🟢 Trusted | 70-100 | Instant auto-approve | Up to 15% discount |
-| 🟡 Standard | 40-69 | Normal ML pipeline | Standard pricing |
-| 🔴 Watch | 0-39 | All claims → manual review | No discounts |
-| ⚫ Banned | Confirmed fraud | Account suspended | — |
+| Trusted | 70-100 | Instant auto-approve | Up to 15% discount |
+| Standard | 40-69 | Normal ML pipeline | Standard pricing |
+| Watch | 0-39 | All claims go to manual review | No discounts |
+| Banned | Confirmed fraud | Account suspended | N/A |
 
 ---
 
-## Specific Fraud Scenarios & Detection
+## Specific Fraud Scenarios and Detection
 
 ### Scenario A: GPS Spoofing
 
-**Attack:** Worker uses a GPS spoofing app to fake their location in a rain-affected zone while they're actually in a clear-weather area.
+Attack: Worker uses a GPS spoofing app to fake their location in a rain-affected zone while they're actually in a clear-weather area.
 
-**Detection:**
-1. **GPS trajectory analysis** — Real GPS shows smooth movement; spoofed GPS shows teleportation (sudden jumps)
-2. **Cell tower triangulation** (if available) — Doesn't match GPS coordinates
-3. **Peer cross-reference** — If only one worker claims disruption in a zone where 50 workers are registered, it's suspicious
-4. **Historical pattern** — Worker has GPS data from a different area most of the week but claims disruption in registered zone
+Detection:
+1. GPS trajectory analysis: Real GPS shows smooth movement; spoofed GPS shows teleportation (sudden jumps)
+2. Cell tower triangulation (if available): Doesn't match GPS coordinates
+3. Peer cross-reference: If only one worker claims disruption in a zone where 50 workers are registered, it's suspicious
+4. Historical pattern: Worker has GPS data from a different area most of the week but claims disruption in registered zone
 
 ```python
 def detect_gps_spoofing(worker_id, claimed_time):
@@ -283,22 +283,22 @@ def detect_gps_spoofing(worker_id, claimed_time):
 
 ### Scenario B: Organized Fraud Ring
 
-**Attack:** Group of workers coordinate fake claims — one creates fake disruption reports, all others claim from the same "event."
+Attack: Group of workers coordinate fake claims. One creates fake disruption reports, all others claim from the same "event."
 
-**Detection:**
-1. **Cluster analysis** — Identify groups of workers who always claim together
-2. **Registration pattern** — If 5 workers registered from the same IP/device within a week, flag the group
-3. **Payout destination** — Multiple workers' UPI accounts linked to the same bank account
-4. **Referral chain** — Long referral chains where all members claim far above average
+Detection:
+1. Cluster analysis: Identify groups of workers who always claim together
+2. Registration pattern: If 5 workers registered from the same IP/device within a week, flag the group
+3. Payout destination: Multiple workers' UPI accounts linked to the same bank account
+4. Referral chain: Long referral chains where all members claim far above average
 
 ### Scenario C: Inflated Shift Hours
 
-**Attack:** Worker registers 12+ hours/day to maximize payout when disruptions occur.
+Attack: Worker registers 12+ hours/day to maximize payout when disruptions occur.
 
-**Detection:**
-1. **Platform earnings cross-check** — Declared hours should roughly match estimated deliveries
-2. **Peer comparison** — Compare declared hours to zone average
-3. **Automatic cap** — Maximum 10 hours/day for Premium tier, regardless of declaration
+Detection:
+1. Platform earnings cross-check: Declared hours should roughly match estimated deliveries
+2. Peer comparison: Compare declared hours to zone average
+3. Automatic cap: Maximum 10 hours/day for Premium tier, regardless of declaration
 
 ---
 
@@ -307,27 +307,27 @@ def detect_gps_spoofing(worker_id, claimed_time):
 ### Fraud Queue View
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  🚨 Fraud Review Queue — 3 Items Pending                │
-│                                                         │
-│  ┌─────────────────────────────────────────────────────┐│
-│  │ ⚠️ CLAIM #1247 — Anomaly Score: 0.68               ││
-│  │ Worker: Suresh K. | Zone: Andheri West              ││
-│  │ Trigger: Heavy Rain | Payout: ₹450                  ││
-│  │ Flag: claim_frequency_7d = 4 (zone avg: 0.8)       ││
-│  │ Trust Score: 42 (Standard)                           ││
-│  │ [✅ Approve] [❌ Reject] [🔍 Investigate]            ││
-│  └─────────────────────────────────────────────────────┘│
-│                                                         │
-│  ┌─────────────────────────────────────────────────────┐│
-│  │ 🔴 CLAIM #1251 — Anomaly Score: 0.82               ││
-│  │ Worker: Anonymous | Zone: Lajpat Nagar              ││
-│  │ Trigger: Severe AQI | Payout: ₹560                  ││
-│  │ Flag: GPS inconsistency (possible spoofing)          ││
-│  │ Trust Score: 28 (Watch)                              ││
-│  │ [✅ Approve] [❌ Reject] [🔍 Investigate]            ││
-│  └─────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────┘
++-----------------------------------------------------------+
+|  Fraud Review Queue - 3 Items Pending                      |
+|                                                            |
+|  +---------------------------------------------------------+
+|  | CLAIM #1247 - Anomaly Score: 0.68                       |
+|  | Worker: Suresh K. | Zone: Andheri West                  |
+|  | Trigger: Heavy Rain | Payout: Rs. 450                   |
+|  | Flag: claim_frequency_7d = 4 (zone avg: 0.8)            |
+|  | Trust Score: 42 (Standard)                               |
+|  | [Approve] [Reject] [Investigate]                         |
+|  +---------------------------------------------------------+
+|                                                            |
+|  +---------------------------------------------------------+
+|  | CLAIM #1251 - Anomaly Score: 0.82                       |
+|  | Worker: Anonymous | Zone: Lajpat Nagar                  |
+|  | Trigger: Severe AQI | Payout: Rs. 560                   |
+|  | Flag: GPS inconsistency (possible spoofing)              |
+|  | Trust Score: 28 (Watch)                                  |
+|  | [Approve] [Reject] [Investigate]                         |
+|  +---------------------------------------------------------+
++-----------------------------------------------------------+
 ```
 
 ### Key Admin Metrics
@@ -335,7 +335,7 @@ def detect_gps_spoofing(worker_id, claimed_time):
 | Metric | Description |
 |--------|-------------|
 | Fraud Detection Rate | % of detected/prevented fraudulent claims |
-| False Positive Rate | % of legitimate claims incorrectly flagged (<5% target) |
+| False Positive Rate | % of legitimate claims incorrectly flagged (< 5% target) |
 | Average Review Time | Time for admin to resolve flagged claims |
 | Loss Ratio Impact | How much fraud detection saves on claim payouts |
 | Trust Score Distribution | Histogram of worker trust scores |
@@ -346,10 +346,10 @@ def detect_gps_spoofing(worker_id, claimed_time):
 
 | Phase | What We Build | Approach |
 |-------|--------------|----------|
-| **Phase 1** | Basic weather cross-validation | Rule-based |
-| **Phase 2** | Full Layer 1 rules + basic Isolation Forest | Rules + ML v1 |
-| **Phase 2** | Trust Score system (heuristic) | Formula-based |
-| **Phase 3** | Enhanced ML model with more features | ML v2 |
-| **Phase 3** | GPS spoofing detection | ML + rules |
-| **Phase 3** | Admin fraud review dashboard | Full UI |
-| **Phase 3** | Fraud analytics & reporting | Dashboard |
+| Phase 1 | Basic weather cross-validation | Rule-based |
+| Phase 2 | Full Layer 1 rules + basic Isolation Forest | Rules + ML v1 |
+| Phase 2 | Trust Score system (heuristic) | Formula-based |
+| Phase 3 | Enhanced ML model with more features | ML v2 |
+| Phase 3 | GPS spoofing detection | ML + rules |
+| Phase 3 | Admin fraud review dashboard | Full UI |
+| Phase 3 | Fraud analytics and reporting | Dashboard |

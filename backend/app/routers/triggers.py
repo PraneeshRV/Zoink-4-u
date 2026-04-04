@@ -18,9 +18,14 @@ router = APIRouter(prefix="/triggers", tags=["Triggers"])
 async def get_current_conditions(
     zone_h3: str = Query(...),
     city: str = Query(""),
+    time_of_day_hour: int = Query(None),
+    vehicle_type: str = Query("scooter"),
+    rider_experience_months: int = Query(6),
 ):
     try:
-        conditions = await get_risk_conditions(zone_h3, city)
+        conditions = await get_risk_conditions(
+            zone_h3, city, time_of_day_hour, vehicle_type, rider_experience_months
+        )
         return conditions
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

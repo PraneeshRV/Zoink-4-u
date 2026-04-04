@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { triggersAPI } from '../lib/api';
@@ -45,23 +45,30 @@ export default function SimPage() {
   const [running, setRunning] = useState(false);
   const [completedStep, setCompletedStep] = useState(-1);
   const [result, setResult] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'run' | 'how'>('run');
+  const [activeTab, setActiveTab] = useState<'live' | 'run' | 'how'>('live');
+
+  // Live State
+  const [loadingLive, setLoadingLive] = useState(false);
+  const [liveData, setLiveData] = useState<any>(null);
+  const [liveProgress, setLiveProgress] = useState(0);
 
   const selectedEvent = EVENTS.find(e => e.value === eventType)!;
   const selectedZone = ZONES.find(z => z.value === zone)!;
   const srsBand = severity >= 8 ? SRS_BANDS[2] : severity >= 5 ? SRS_BANDS[1] : SRS_BANDS[0];
 
-  const handleRun = async () => {
+  const handleRun = async (overrideSeverity?: number, overrideEvent?: string) => {
     setRunning(true);
     setCompletedStep(-1);
     setResult(null);
+    const finalSeverity = overrideSeverity !== undefined ? Math.round(overrideSeverity) : severity;
+    const finalEvent = overrideEvent || eventType;
 
     try {
       const res = await triggersAPI.simulate({
-        event_type: eventType,
+        event_type: finalEvent,
         zone_h3: zone,
         city: selectedZone.city,
-        severity,
+        severity: finalSeverity || 1,
         duration_hours: duration,
       });
       toast.success('Disruption simulated');
@@ -86,6 +93,31 @@ export default function SimPage() {
     }
   };
 
+  const loadLiveConditions = async () => {
+    setLoadingLive(true);
+    setLiveData(null);
+    setLiveProgress(0);
+    try {
+      // Fake progress for visual coolness
+      const fetchStart = Date.now();
+      const interval = setInterval(() => {
+        setLiveProgress(p => p >= 90 ? 90 : p + 5);
+      }, 50);
+      
+      const res = await triggersAPI.getCurrentConditions(zone, selectedZone.city);
+      const elapsed = Date.now() - fetchStart;
+      if (elapsed < 1500) await new Promise(r => setTimeout(r, 1500 - elapsed));
+      
+      clearInterval(interval);
+      setLiveProgress(100);
+      setLiveData(res.data);
+    } catch (e: any) {
+      toast.error("Failed to load APIs");
+    } finally {
+      setTimeout(() => setLoadingLive(false), 300);
+    }
+  };
+
   const handleReset = () => {
     setRunning(false);
     setCompletedStep(-1);
@@ -102,13 +134,98 @@ export default function SimPage() {
       <div className="page-content">
         {/* Tabs */}
         <div className="pill-tabs">
+          <button className={`pill-tab ${activeTab === 'live' ? 'active' : ''}`} onClick={() => setActiveTab('live')}>
+            <Icon name="activity" size={14} style={{ marginRight: 6 }} /> Live Engine
+          </button>
           <button className={`pill-tab ${activeTab === 'run' ? 'active' : ''}`} onClick={() => setActiveTab('run')}>
-            Run Simulation
+            Manual Sim
           </button>
           <button className={`pill-tab ${activeTab === 'how' ? 'active' : ''}`} onClick={() => setActiveTab('how')}>
             How It Works
           </button>
         </div>
+
+        {activeTab === 'live' && (
+           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+             <div className="card">
+               <div style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: 12 }}>Target Zone</div>
+               <div className="input-group" style={{ marginBottom: 16 }}>
+                 <select className="input-field" value={zone} onChange={e => {setZone(e.target.value); setLiveData(null);}}>
+                   {ZONES.map(z => <option key={z.value} value={z.value}>{z.label}</option>)}
+                 </select>
+               </div>
+               
+               <button onClick={loadLiveConditions} disabled={loadingLive || running} className="btn btn-secondary" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                 {loadingLive ? `Fetching satellite & sensor data ${liveProgress}%...` : "Run Real-time Engine Radar"}
+               </button>
+             </div>
+
+             <AnimatePresence>
+               {liveData && !loadingLive && (
+                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="card" style={{ overflow: 'hidden' }}>
+                    <div style={{ background: 'var(--bg-raised)', padding: '16px', borderRadius: 10, marginBottom: 16, border: '1px solid var(--border-default)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div className="text-secondary text-sm">Calculated Risk Score (SRS)</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 800, color: liveData.overall_risk_score > 7 ? 'var(--danger)' : liveData.overall_risk_score > 4 ? 'var(--warning)' : 'var(--success)' }}>
+                          {liveData.overall_risk_score.toFixed(1)} <span style={{ fontSize: '1rem', color: 'var(--text-hint)'}}>/ 10</span>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div className="text-secondary text-sm">Active Auto-triggers</div>
+                        {liveData.active_triggers.length > 0 ? (
+                          <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap', justifyContent: 'flex-end'}}>
+                            {liveData.active_triggers.map((t: string) => (
+                              <span key={t} style={{ padding: '4px 8px', borderRadius: 20, fontSize: '0.75rem', fontWeight: 700, background: 'var(--danger)', color: 'white' }}>{t}</span>
+                            ))}
+                          </div>
+                        ) : (
+                           <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--success)', marginTop: 4}}>None</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: 16 }}>20-Parameter Risk Matrix</div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
+                      {Object.entries(liveData.parameters_20).map(([key, value], idx) => (
+                         <motion.div 
+                           initial={{ opacity: 0, y: 10 }} 
+                           animate={{ opacity: 1, y: 0 }} 
+                           transition={{ delay: idx * 0.03 }}
+                           key={key} 
+                           style={{ 
+                             background: 'var(--bg-overlay)', padding: '10px 14px', borderRadius: 8, 
+                             border: '1px solid var(--border-subtle)', position: 'relative', overflow: 'hidden' 
+                           }}
+                         >
+                           <div style={{ fontSize: '0.7rem', color: 'var(--text-hint)', fontWeight: 600, textTransform: 'uppercase', marginBottom: 6 }}>{key.replace(/_/g, ' ')}</div>
+                           <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>{String(value)}</div>
+                           {/* Decorative pulsing dot based on severity approximations */}
+                           { (key.includes('rainfall') && Number(value) > 20) || (key.includes('aqi') && Number(value) > 200) || (key.includes('congestion') && Number(value) > 4) ? (
+                              <motion.div
+                                animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+                                transition={{ duration: 1.5, repeat: Infinity }}
+                                style={{ position: 'absolute', top: 12, right: 12, width: 6, height: 6, borderRadius: '50%', background: 'var(--danger)' }}
+                              />
+                           ) : (
+                              <div style={{ position: 'absolute', top: 12, right: 12, width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', opacity: 0.5 }} />
+                           )}
+                         </motion.div>
+                      ))}
+                    </div>
+
+                    <div style={{ marginTop: 24 }}>
+                      <button className="btn btn-primary" style={{ width: '100%', gap: 8, background: liveData.overall_risk_score > 5 ? 'var(--danger)' : 'var(--accent-600)' }} onClick={() => handleRun(liveData.overall_risk_score, liveData.active_triggers[0] || 'T1_HEAVY_RAIN')} disabled={running || liveData.overall_risk_score <= 1}>
+                        <Icon name="zap" size={16} /> 
+                        { liveData.overall_risk_score > 1 ? `Execute Automated Payout Pipeline with SRS ${liveData.overall_risk_score}` : "Conditions are stable. No Payout needed." }
+                      </button>
+                    </div>
+
+                 </motion.div>
+               )}
+             </AnimatePresence>
+           </motion.div>
+        )}
 
         {activeTab === 'how' && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
@@ -290,7 +407,7 @@ export default function SimPage() {
 
             <button
               className="btn btn-primary"
-              onClick={handleRun}
+              onClick={() => handleRun()}
               disabled={running}
               style={{ gap: 10 }}
             >
@@ -299,120 +416,122 @@ export default function SimPage() {
                 : <><Icon name="zap" size={17} /> Fire Disruption</>
               }
             </button>
-
-            {/* Pipeline steps */}
-            {(running || result) && (
-              <div className="card">
-                <div style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: 16 }}>Pipeline Execution</div>
-                {PIPELINE.map((step, i) => {
-                  const isDone = completedStep >= i;
-                  const isActive = running && completedStep === i - 1;
-                  return (
-                    <div key={step.label} style={{
-                      display: 'flex', alignItems: 'flex-start', gap: 12,
-                      paddingBottom: i < PIPELINE.length - 1 ? 18 : 0,
-                      position: 'relative',
-                    }}>
-                      {i < PIPELINE.length - 1 && (
-                        <div style={{
-                          position: 'absolute', left: 16, top: 34, bottom: 0, width: 1,
-                          background: isDone ? 'var(--accent-600)' : 'var(--border-default)',
-                          transition: 'background 0.4s ease',
-                        }} />
-                      )}
-                      <div style={{
-                        width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        zIndex: 1, transition: 'all 0.3s ease',
-                        background: isDone ? 'var(--accent-600)' : isActive ? 'var(--bg-overlay)' : 'var(--bg-raised)',
-                        border: isDone ? '2px solid var(--accent-600)' : '2px solid var(--border-default)',
-                      }}>
-                        {isDone
-                          ? <Icon name="check" size={14} style={{ color: '#fff' }} />
-                          : isActive
-                          ? <span className="spinner" style={{ width: 13, height: 13, borderWidth: 2, borderTopColor: 'var(--accent-400)' }} />
-                          : <Icon name={step.icon} size={14} style={{ color: 'var(--text-hint)' }} />
-                        }
-                      </div>
-                      <div style={{ paddingTop: 5 }}>
-                        <div style={{
-                          fontWeight: isDone ? 600 : 400, fontSize: '0.9rem',
-                          color: isDone ? 'var(--text-primary)' : 'var(--text-secondary)',
-                          transition: 'color 0.3s ease',
-                        }}>{step.label}</div>
-                        <div className="text-xs text-hint" style={{ marginTop: 1 }}>{step.sub}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Result */}
-            <AnimatePresence>
-              {result && (
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, ease: 'easeOut' }}
-                >
-                  <div className="card" style={{
-                    border: '1px solid rgba(81,207,102,0.25)',
-                    background: 'rgba(81,207,102,0.04)',
-                    marginBottom: 12,
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                      <div style={{
-                        width: 28, height: 28, borderRadius: '50%',
-                        background: 'var(--success-soft)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <Icon name="check" size={14} style={{ color: 'var(--success)' }} />
-                      </div>
-                      <div style={{ fontWeight: 800 }}>Pipeline Complete</div>
-                    </div>
-
-                    <div className="grid-2" style={{ gap: 14 }}>
-                      <div className="stat-cell">
-                        <div className="stat-label">Claims Created</div>
-                        <div className="font-mono" style={{ fontSize: '1.5rem', fontWeight: 800 }}>{result.claimsCreated}</div>
-                      </div>
-                      <div className="stat-cell">
-                        <div className="stat-label">Riders Paid</div>
-                        <div className="font-mono" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--success)' }}>{result.ridersPaid}</div>
-                      </div>
-                      <div className="stat-cell">
-                        <div className="stat-label">Total Payout</div>
-                        <div className="font-mono" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--success)' }}>
-                          ₹{result.totalPayout.toFixed(0)}
-                        </div>
-                      </div>
-                      <div className="stat-cell">
-                        <div className="stat-label">Avg per Rider</div>
-                        <div className="font-mono" style={{ fontSize: '1.5rem', fontWeight: 800 }}>₹{result.avgPayout.toFixed(0)}</div>
-                      </div>
-                    </div>
-
-                    {result.fraudFlagged > 0 && (
-                      <div className="info-box" style={{
-                        marginTop: 14,
-                        background: 'var(--warning-soft)', borderColor: 'rgba(252,196,25,0.25)',
-                      }}>
-                        <Icon name="alert" size={14} style={{ color: 'var(--warning)', flexShrink: 0 }} />
-                        <span className="text-xs">
-                          <strong>{result.fraudFlagged}</strong> claim{result.fraudFlagged > 1 ? 's' : ''} flagged for manual review
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <button className="btn btn-secondary" onClick={handleReset}>
-                    Reset
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            
           </motion.div>
         )}
+
+        {/* Pipeline steps (show across run and live if executing) */}
+        {(running || result) && (
+          <div className="card" style={{ marginTop: 16 }}>
+            <div style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: 16 }}>Pipeline Execution</div>
+            {PIPELINE.map((step, i) => {
+              const isDone = completedStep >= i;
+              const isActive = running && completedStep === i - 1;
+              return (
+                <div key={step.label} style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 12,
+                  paddingBottom: i < PIPELINE.length - 1 ? 18 : 0,
+                  position: 'relative',
+                }}>
+                  {i < PIPELINE.length - 1 && (
+                    <div style={{
+                      position: 'absolute', left: 16, top: 34, bottom: 0, width: 1,
+                      background: isDone ? 'var(--accent-600)' : 'var(--border-default)',
+                      transition: 'background 0.4s ease',
+                    }} />
+                  )}
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1, transition: 'all 0.3s ease',
+                    background: isDone ? 'var(--accent-600)' : isActive ? 'var(--bg-overlay)' : 'var(--bg-raised)',
+                    border: isDone ? '2px solid var(--accent-600)' : '2px solid var(--border-default)',
+                  }}>
+                    {isDone
+                      ? <Icon name="check" size={14} style={{ color: '#fff' }} />
+                      : isActive
+                      ? <span className="spinner" style={{ width: 13, height: 13, borderWidth: 2, borderTopColor: 'var(--accent-400)' }} />
+                      : <Icon name={step.icon} size={14} style={{ color: 'var(--text-hint)' }} />
+                    }
+                  </div>
+                  <div style={{ paddingTop: 5 }}>
+                    <div style={{
+                      fontWeight: isDone ? 600 : 400, fontSize: '0.9rem',
+                      color: isDone ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      transition: 'color 0.3s ease',
+                    }}>{step.label}</div>
+                    <div className="text-xs text-hint" style={{ marginTop: 1 }}>{step.sub}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Result */}
+        <AnimatePresence>
+          {result && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              style={{ marginTop: 16 }}
+            >
+              <div className="card" style={{
+                border: '1px solid rgba(81,207,102,0.25)',
+                background: 'rgba(81,207,102,0.04)',
+                marginBottom: 12,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%',
+                    background: 'var(--success-soft)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Icon name="check" size={14} style={{ color: 'var(--success)' }} />
+                  </div>
+                  <div style={{ fontWeight: 800 }}>Pipeline Complete</div>
+                </div>
+
+                <div className="grid-2" style={{ gap: 14 }}>
+                  <div className="stat-cell">
+                    <div className="stat-label">Claims Created</div>
+                    <div className="font-mono" style={{ fontSize: '1.5rem', fontWeight: 800 }}>{result.claimsCreated}</div>
+                  </div>
+                  <div className="stat-cell">
+                    <div className="stat-label">Riders Paid</div>
+                    <div className="font-mono" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--success)' }}>{result.ridersPaid}</div>
+                  </div>
+                  <div className="stat-cell">
+                    <div className="stat-label">Total Payout</div>
+                    <div className="font-mono" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--success)' }}>
+                      ₹{result.totalPayout.toFixed(0)}
+                    </div>
+                  </div>
+                  <div className="stat-cell">
+                    <div className="stat-label">Avg per Rider</div>
+                    <div className="font-mono" style={{ fontSize: '1.5rem', fontWeight: 800 }}>₹{result.avgPayout.toFixed(0)}</div>
+                  </div>
+                </div>
+
+                {result.fraudFlagged > 0 && (
+                  <div className="info-box" style={{
+                    marginTop: 14,
+                    background: 'var(--warning-soft)', borderColor: 'rgba(252,196,25,0.25)',
+                  }}>
+                    <Icon name="alert" size={14} style={{ color: 'var(--warning)', flexShrink: 0 }} />
+                    <span className="text-xs">
+                      <strong>{result.fraudFlagged}</strong> claim{result.fraudFlagged > 1 ? 's' : ''} flagged for manual review
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <button className="btn btn-secondary" onClick={handleReset}>
+                Reset
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

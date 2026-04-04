@@ -1,4 +1,4 @@
-# Coverage Scope — Zoink 4 u Income-Loss Insurance
+# Coverage Scope — GigShield Income-Loss Insurance
 
 > Weekly-premium micro-insurance for food-delivery gig workers in India (Swiggy, Zomato, Uber Eats).
 

@@ -313,6 +313,44 @@ This actively discourages riders from filing marginal claims, driving a **30% lo
 
 ---
 
+## Coverage Exclusions: What Zoink-4-u Does NOT Cover
+
+> Full exclusion specs with IRDAI references and enforcement logic: [docs/EXCLUSIONS.md](./docs/EXCLUSIONS.md)
+
+Parametric insurance works because the risk pool is **bounded**. The following event categories are **explicitly excluded** from coverage to ensure actuarial soundness, regulatory compliance, and protection of the premium pool:
+
+| # | Exclusion Category | Why It Cannot Be Covered at ₹29-69/week | IRDAI Basis |
+|---|-------------------|----------------------------------------|-------------|
+| 1 | **War, Armed Conflict & Insurrection** | Unbounded correlated nationwide loss. Sovereign risk that no micro-premium pool can absorb | Standard exclusion per IRDAI General Insurance Product Guidelines |
+| 2 | **Terrorism & Sabotage** | Intentional, extreme loss volatility with city-wide accumulation risk. Covered separately via Indian Terrorism Risk Insurance Pool (GIC Re) | Terrorism excluded per IRDAI; separate pool via GIC Re |
+| 3 | **Pandemic, Epidemic & Public Health Emergency** | Long-tail, multi-zone, prolonged business interruption spanning weeks to months. COVID-19 proved even large insurers face solvency stress from pandemic claims | Post-COVID mandate: IRDAI Circular IRDAI/HLT/REG/CIR/2020 |
+| 4 | **Nuclear, Radiological, Biological & Chemical (NRBC)** | Severity tail exceeds all parametric product risk appetite. Can render cities uninhabitable for years | Civil Liability for Nuclear Damage Act, 2010 |
+| 5 | **Platform Employment Actions** | Account bans, platform restructuring, and mass layoffs are contractual/labor issues, not external disruptions | Non-insurable under product scope |
+| 6 | **Voluntary & Self-Inflicted Disruptions** | Rider choosing not to work is not an involuntary trigger. Covering this creates moral hazard | Behavioral / moral hazard exclusion |
+| 7 | **Pre-Existing & Scheduled Disruptions** | Events known before policy activation enable adverse selection, draining the premium pool | Standard adverse selection prevention |
+
+### How Exclusions Are Enforced
+
+Exclusions are **programmatically enforced** in the claims pipeline, not buried in fine print:
+
+1. **Level 1 — Exclusion Registry Check:** Every incoming trigger event is validated against a hardcoded exclusion registry before any payout calculation. Excluded events are blocked and logged for audit
+2. **Level 2 — Contextual Validation:** Even if a trigger passes Level 1, the 5-layer fraud pipeline runs secondary checks (platform account status, temporal analysis, behavioral patterns)
+
+```
+Incoming Trigger → EXCLUSION REGISTRY CHECK → Blocked? → Log & Reject (HTTP 422)
+                                             → Passed?  → Continue to payout pipeline
+```
+
+### Rider Communication
+
+Exclusions are explained in **plain language** during WhatsApp onboarding and on the PWA subscription page before payment:
+
+> *"We don't cover: wars, terrorist attacks, pandemics (too big for weekly insurance), nuclear disasters, your account getting banned (that's between you and Swiggy/Zomato), or days you choose not to work. We only pay when something external STOPS you from earning."*
+
+This satisfies informed consent under the Indian Contract Act, 1872 and prevents "hidden terms" disputes under the Consumer Protection Act, 2019.
+
+---
+
 ## 25+ Parametric Triggers Across 4 Categories
 
 > Full trigger specs with thresholds, API sources, fraud vectors, and anti-fraud checks for each trigger: [docs/COVERAGE_SCOPE.md](./docs/COVERAGE_SCOPE.md)
@@ -761,7 +799,7 @@ Our fraud detection architecture is designed for data minimisation by default. I
 ## Links
 
 - **GitHub:** [https://github.com/PraneeshRV/Zoink-4-u](https://github.com/PraneeshRV/Zoink-4-u)
-- **Demo Video (Phase 1):** [Youtube](https://youtu.be/vgOpAC2V1CY)
+- **Demo Video (Phase 1):** [Coming Soon]
 - **Live Prototype:** [Coming Soon]
 
 ---

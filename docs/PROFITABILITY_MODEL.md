@@ -1,4 +1,4 @@
-# Profitability Model — Zoink 4 u Unit Economics
+# Profitability Model — GigShield Unit Economics
 
 > Does the differentiation strategy keep us profitable? **Yes** — most differentiators either **reduce costs** or **increase retention**, which is the single biggest lever in micro-insurance.
 
@@ -183,7 +183,7 @@ The **loss ratio** (claims paid ÷ premiums collected) is the make-or-break numb
 |---|---|---|
 | **Data insights to platforms** | ₹5-10/rider/month | Medium — privacy-sensitive, needs rider consent |
 | **Fintech partnerships** (loan leads for riders with good insurance history) | ₹50-200 per qualified lead | Low — high demand from NBFCs for thin-file borrowers |
-| **White-label for platforms** (Swiggy/Zomato offers "Zoink 4 u powered" as a perk) | Platform pays subsidised premium | Low — aligns platform's rider retention goals |
+| **White-label for platforms** (Swiggy/Zomato offers "GigShield powered" as a perk) | Platform pays subsidised premium | Low — aligns platform's rider retention goals |
 | **Expand to adjacent gig verticals** (Dunzo, Porter, Rapido, Urban Company) | 3-5× TAM expansion | Low — same model, different risk profiles |
 | **Parametric product for restaurants** (restaurant revenue loss from same disruptions) | New product line | Medium — different underwriting |
 

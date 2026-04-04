@@ -1,4 +1,4 @@
-# What Makes Zoink 4 u Actually Win — Differentiation Strategy
+# What Makes GigShield Actually Win — Differentiation Strategy
 
 > Beyond coverage scope: the features, design choices, and trust mechanisms that make gig workers **want** this product.
 
@@ -67,9 +67,9 @@ Coverage alone isn't sticky enough. Give riders a **free tool** that adds value 
 - **Weekly earnings trend** — visual graph of last 8 weeks (pulled from platform API with rider consent)
 - **Disruption calendar** — upcoming weather risks, known events, so riders can plan shifts
 - **Zone heatmap** — which zones had most disruptions last month (helps riders pick safer zones)
-- **Earnings floor indicator** — "With Zoink 4 u, your minimum guaranteed this week is ₹X even if disruptions hit"
+- **Earnings floor indicator** — "With GigShield, your minimum guaranteed this week is ₹X even if disruptions hit"
 
-This makes Zoink 4 u feel like a **financial co-pilot**, not just an insurance policy.
+This makes GigShield feel like a **financial co-pilot**, not just an insurance policy.
 
 ---
 
@@ -157,7 +157,7 @@ Long-term play that makes riders deeply loyal:
 
 ---
 
-## Summary: Why a Rider Would Choose Zoink 4 u
+## Summary: Why a Rider Would Choose GigShield
 
 ```
 ┌──────────────────────────────────────────────────┐

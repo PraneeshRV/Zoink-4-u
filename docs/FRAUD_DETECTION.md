@@ -45,7 +45,7 @@ flowchart TD
     L2 -->|Score > 0.7| REJ
     
     subgraph L3["Layer 3: Trust Score Gate"]
-        T1["Check Zoink 4 u Trust Score"]
+        T1["Check GigShield Trust Score"]
         T2["70+: Auto-approve"]
         T3["40-69: Standard processing"]
         T4["< 40: Manual review"]
@@ -212,7 +212,7 @@ model.fit(features)
 
 ---
 
-## Layer 3: Zoink 4 u Trust Score
+## Layer 3: GigShield Trust Score
 
 A dynamic reputation score that evolves with worker behavior over time.
 

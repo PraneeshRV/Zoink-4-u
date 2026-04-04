@@ -68,7 +68,7 @@ async def check_and_fire_triggers():
 
                         # Create disruption event
                         event = DisruptionEvent(
-                            id=uuid.uuid4(),
+                            id=str(uuid.uuid4()),
                             event_type=event_type,
                             zone_h3=zone_h3,
                             city=city,

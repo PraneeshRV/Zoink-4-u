@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const NAV_ITEMS = [
-  { path: '/admin/dashboard', icon: '📊', label: 'Dashboard' },
-  { path: '/admin/riders', icon: '👥', label: 'Riders' },
-  { path: '/admin/claims', icon: '📋', label: 'Claims' },
+  { path: '/admin/dashboard', icon: '◈', label: 'Dashboard' },
+  { path: '/admin/riders', icon: '◉', label: 'Riders' },
+  { path: '/admin/claims', icon: '≡', label: 'Claims' },
   { path: '/admin/disruptions', icon: '⚡', label: 'Disruptions' },
-  { path: '/admin/simulate', icon: '🎮', label: 'Simulate' },
+  { path: '/admin/simulate', icon: '▷', label: 'Simulate' },
 ];
 
 export default function AdminLayout() {
@@ -36,22 +36,44 @@ export default function AdminLayout() {
     return (
       <div style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--surface-base)',
+        background: 'var(--bg-base)', padding: 24,
       }}>
-        <div className="card-glass" style={{ maxWidth: 400, width: '100%', padding: 32, textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 4 }}>🔐 Admin Panel</h2>
-          <p className="text-secondary text-sm mb-20">Enter admin password to continue</p>
-          <div className="input-group">
-            <input className="input-field" type="password" placeholder="Password"
-              value={password} onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleLogin()} />
-            <p className="text-xs text-hint mt-4">💡 Use <strong>admin123</strong> for demo</p>
+        <div className="card" style={{ maxWidth: 400, width: '100%', padding: 32 }}>
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{
+              width: 52, height: 52, borderRadius: 12,
+              background: 'var(--bg-raised)',
+              border: '1px solid var(--border-default)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.4rem', margin: '0 auto 14px',
+            }}>🔐</div>
+            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: 4 }}>Admin Console</h2>
+            <p className="text-secondary text-sm">Zoink-4-u Operations Panel</p>
           </div>
-          <button className="btn btn-primary mt-12" onClick={handleLogin}>
+
+          <div className="input-group">
+            <label className="input-label">Password</label>
+            <input
+              id="admin-password"
+              className="input-field"
+              type="password"
+              placeholder="Enter admin password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            />
+            <div className="info-box" style={{ marginTop: 6 }}>
+              <span>💡</span>
+              <span>Use <strong>admin123</strong> for demo</span>
+            </div>
+          </div>
+
+          <button className="btn btn-primary" onClick={handleLogin} style={{ marginTop: 8 }}>
             Enter Admin Panel
           </button>
-          <button className="btn btn-ghost mt-8" onClick={() => navigate('/onboarding')}>
-            ← Back to App
+          <button className="btn btn-ghost" onClick={() => navigate('/onboarding')}
+            style={{ marginTop: 8, color: 'var(--text-hint)' }}>
+            ← Back to Rider App
           </button>
         </div>
       </div>
@@ -59,32 +81,53 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="app-container admin-layout">
+    <div className="app-container admin-layout" style={{ maxWidth: '100%' }}>
       <div className="admin-wrapper">
         {/* Sidebar */}
         <aside className="admin-sidebar">
           <div className="admin-sidebar-logo">
-            <h2>Zoink-4-u</h2>
-            <span>Admin Console</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 6,
+                background: 'var(--accent-600)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.85rem',
+              }}>🛡️</div>
+              <div>
+                <h2>Zoink-4-u</h2>
+                <span>Admin Console</span>
+              </div>
+            </div>
           </div>
-          {NAV_ITEMS.map(item => (
+
+          <div style={{ flex: 1, paddingTop: 8 }}>
+            {NAV_ITEMS.map(item => (
+              <div
+                key={item.path}
+                className={`admin-nav-link ${location.pathname === item.path ? 'active' : ''}`}
+                onClick={() => navigate(item.path)}
+              >
+                <span className="nav-icon" style={{ fontSize: '0.9rem' }}>{item.icon}</span>
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 8 }}>
             <div
-              key={item.path}
-              className={`admin-nav-link ${location.pathname === item.path ? 'active' : ''}`}
-              onClick={() => navigate(item.path)}
+              className="admin-nav-link"
+              onClick={() => navigate('/dashboard')}
             >
-              <span className="nav-icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </div>
-          ))}
-          <div style={{ padding: '24px 24px 0', marginTop: 'auto', borderTop: '1px solid var(--border-default)' }}>
-            <div className="admin-nav-link" onClick={handleLogout} style={{ marginTop: 12 }}>
-              <span className="nav-icon">🚪</span>
-              <span>Logout</span>
-            </div>
-            <div className="admin-nav-link" onClick={() => navigate('/onboarding')}>
               <span className="nav-icon">📱</span>
               <span>Rider App</span>
+            </div>
+            <div
+              className="admin-nav-link"
+              onClick={handleLogout}
+              style={{ color: 'var(--danger)' }}
+            >
+              <span className="nav-icon">↩</span>
+              <span>Logout</span>
             </div>
           </div>
         </aside>

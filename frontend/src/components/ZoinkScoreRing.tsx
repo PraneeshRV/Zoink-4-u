@@ -1,73 +1,53 @@
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 
-interface ZoinkScoreRingProps {
+interface Props {
   score: number;
   size?: number;
 }
 
-export default function ZoinkScoreRing({ score, size = 120 }: ZoinkScoreRingProps) {
-  const radius = (size - 12) / 2;
+export default function ZoinkScoreRing({ score, size = 100 }: Props) {
+  const [animatedScore, setAnimatedScore] = useState(0);
+  const radius = (size - 16) / 2;
   const circumference = 2 * Math.PI * radius;
-  const progress = (score / 100) * circumference;
+  const progress = (animatedScore / 100) * circumference;
+  const offset = circumference - progress;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimatedScore(score), 200);
+    return () => clearTimeout(timer);
+  }, [score]);
 
   const getColor = () => {
-    if (score >= 70) return '#14b8a6';
-    if (score >= 40) return '#f59e0b';
-    return '#ef4444';
+    if (animatedScore >= 70) return '#22c55e'; // green
+    if (animatedScore >= 40) return '#fbbf24'; // yellow
+    return '#ef4444'; // red
   };
-
-  const getTier = () => {
-    if (score >= 70) return 'Trusted';
-    if (score >= 40) return 'Standard';
-    return 'Watch';
-  };
-
-  const color = getColor();
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        {/* Background ring */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="#1E293B"
-          strokeWidth="8"
-        />
-        {/* Progress ring */}
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: circumference - progress }}
-          transition={{ duration: 1.5, ease: 'easeOut' }}
-          style={{
-            filter: `drop-shadow(0 0 8px ${color}60)`,
-          }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span
-          className="text-2xl font-bold font-mono"
-          style={{ color }}
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-        >
-          {score}
-        </motion.span>
-        <span className="text-[10px] font-bold text-text-hint uppercase tracking-wider mt-0.5">
-          {getTier()}
-        </span>
+    <div className="zoink-ring-container">
+      <div className="zoink-ring" style={{ width: size, height: size }}>
+        <svg width={size} height={size}>
+          <circle
+            className="zoink-ring-bg"
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+          />
+          <circle
+            className="zoink-ring-progress"
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={getColor()}
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+          />
+        </svg>
+        <div className="zoink-ring-value" style={{ color: getColor() }}>
+          {animatedScore}
+        </div>
       </div>
+      <span className="zoink-ring-label">Zoink Score</span>
     </div>
   );
 }

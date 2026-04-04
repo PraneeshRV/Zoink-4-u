@@ -1,39 +1,41 @@
+"""
+Zoink-4-u ML Engine — FastAPI Application
+Premium calculation, fraud detection, risk profiling, disruption forecast.
+"""
+import logging
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from app.services.pricing_model import calculate_dynamic_premium
-from app.routers import mock_api
+from app.routers.premium import router as premium_router
+from app.routers.fraud import router as fraud_router
+from app.routers.risk import router as risk_router
+from app.routers.forecast import router as forecast_router
 
-app = FastAPI(title="Zoink-4-u ML Engine", version="0.1.0")
+logging.basicConfig(level=logging.INFO)
 
-# CORS - allow frontend on port 5173 to reach this service
+app = FastAPI(
+    title="Zoink-4-u ML Engine",
+    description="ML models for premium pricing, fraud detection, risk profiling",
+    version="2.0.0",
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://localhost:8000", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(mock_api.router)
+app.include_router(premium_router)
+app.include_router(fraud_router)
+app.include_router(risk_router)
+app.include_router(forecast_router)
 
-class PricingRequest(BaseModel):
-    zone_id: str
-    tier: str
-    work_hours_estimated: int = 40
-
-class PricingResponse(BaseModel):
-    base_premium: float
-    dynamic_premium: float
-    risk_score: float
-    factors: dict
-
-@app.post("/pricing/calculate", response_model=PricingResponse)
-def calculate_pricing(req: PricingRequest):
-    # Call our mocked ML model to compute dynamic premium
-    result = calculate_dynamic_premium(req.zone_id, req.tier, req.work_hours_estimated)
-    return result
 
 @app.get("/health")
-def read_health():
-    return {"status": "ml_engine_healthy"}
+async def health():
+    return {"status": "ml_engine_healthy", "version": "2.0.0"}

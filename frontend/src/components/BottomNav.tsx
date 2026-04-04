@@ -1,52 +1,32 @@
-import { Link, useLocation } from 'react-router-dom';
-import { Home, Shield, Zap, Wallet, User } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-const tabs = [
-  { name: 'Home', path: '/dashboard', icon: Home },
-  { name: 'Cover', path: '/purchase', icon: Shield },
-  { name: 'Claims', path: '/claims', icon: Zap },
-  { name: 'Wallet', path: '/wallet', icon: Wallet },
-  { name: 'Profile', path: '/profile', icon: User },
+const navItems = [
+  { path: '/dashboard', icon: '🏠', label: 'Home' },
+  { path: '/policy', icon: '🛡️', label: 'Policy' },
+  { path: '/claims', icon: '📋', label: 'Claims' },
+  { path: '/profile', icon: '👤', label: 'Profile' },
 ];
 
 export default function BottomNav() {
-  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   return (
-    <nav className="floating-nav">
-      <div className="flex justify-around items-center px-2 py-3">
-        {tabs.map(t => {
-          const active = pathname === t.path;
-          return (
-            <Link
-              key={t.name}
-              to={t.path}
-              className="flex flex-col items-center gap-0.5 relative"
-            >
-              <motion.div
-                whileTap={{ scale: 0.85 }}
-                className={`p-1.5 rounded-xl transition-colors duration-200 ${
-                  active ? 'text-primary-400' : 'text-text-hint hover:text-text-secondary'
-                }`}
-              >
-                <t.icon size={20} strokeWidth={active ? 2.5 : 1.8} />
-              </motion.div>
-              <span className={`text-[9px] font-bold tracking-wide ${
-                active ? 'text-primary-400' : 'text-text-hint'
-              }`}>
-                {t.name}
-              </span>
-              {active && (
-                <motion.div
-                  className="nav-active-dot"
-                  layoutId="navDot"
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                />
-              )}
-            </Link>
-          );
-        })}
-      </div>
+    <nav className="bottom-nav">
+      {navItems.map(item => {
+        const isActive = location.pathname === item.path;
+        return (
+          <button
+            key={item.path}
+            className={`nav-item ${isActive ? 'active' : ''}`}
+            onClick={() => navigate(item.path)}
+          >
+            <span className="nav-icon">{item.icon}</span>
+            <span>{item.label}</span>
+            {isActive && <span className="nav-dot" />}
+          </button>
+        );
+      })}
     </nav>
   );
 }

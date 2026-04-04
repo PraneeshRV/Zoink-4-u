@@ -1,36 +1,59 @@
+"""
+Zoink-4-u Backend — FastAPI Application
+"""
+import logging
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.database import engine, Base
-from app.routers import users, policies, claims, wallets, community_fund
+from app.routers import (
+    auth_router, riders_router, policies_router,
+    triggers_router, claims_router, payouts_router, admin_router,
+)
+from app.services.trigger_monitor import setup_scheduler
 
-# Import all models so Base.metadata.create_all sees them
-from app.models import user, policy, claim, wallet, community_fund as cf_model
-
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("zoink")
 
 app = FastAPI(
     title="Zoink-4-u Core Backend",
-    description="Backend API for Registration, Policy Management, Claims, Disruption Shield, and Community Fund.",
-    version="0.2.0"
+    description="Parametric income-loss insurance for gig delivery workers in India",
+    version="2.0.0",
 )
 
-# CORS configuration
+# CORS — allow frontend on localhost:5173
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(users.router)
-app.include_router(policies.router)
-app.include_router(claims.router)
-app.include_router(wallets.router)
-app.include_router(community_fund.router)
+# Register all routers
+app.include_router(auth_router)
+app.include_router(riders_router)
+app.include_router(policies_router)
+app.include_router(triggers_router)
+app.include_router(claims_router)
+app.include_router(payouts_router)
+app.include_router(admin_router)
+
+# Setup background trigger monitor
+setup_scheduler(app)
+
 
 @app.get("/health")
-def read_health():
-    return {"status": "healthy", "version": "0.2.0", "features": ["shield", "buyback", "safe_return", "community_fund"]}
-
+async def health():
+    return {
+        "status": "healthy",
+        "version": "2.0.0",
+        "features": [
+            "auth", "riders", "policies", "triggers",
+            "claims", "payouts", "admin", "fraud_detection",
+            "auto_claim_pipeline", "trigger_monitor",
+        ],
+    }

@@ -1,114 +1,128 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+"""Claims routes: view, approve, reject claims."""
+from fastapi import APIRouter, HTTPException, Depends, Query
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
-from app.models.policy import Policy
-from app.models.user import User
+from app.core.auth import verify_admin
 from app.models.claim import Claim
-from app.schemas.claim import TriggerEvent, ClaimResponse
-from app.services.exclusions import check_exclusion, get_exclusion_summary
-from typing import List
+from app.schemas import ClaimRejectRequest
 
-router = APIRouter(prefix="/claims", tags=["Claims Automation"])
+router = APIRouter(prefix="/claims", tags=["Claims"])
 
-@router.post("/trigger", response_model=List[ClaimResponse])
-def process_automated_trigger(event: TriggerEvent, db: Session = Depends(get_db)):
-    """
-    The core parametric claims pipeline. Processes trigger events through:
-    
-    1. EXCLUSION REGISTRY CHECK (Hard/Soft classification)
-    2. BUYBACK partial coverage check (if rider has add-on)
-    3. SAFE RETURN mid-delivery check (for sudden events)
-    4. PAYOUT CALCULATION (severity-scaled, tier-based)
-    """
-    
-    # ── STEP 1: Find all active policies in the affected zone ──
-    affected_policies = db.query(Policy).filter(
-        Policy.zone_id == event.zone_id,
-        Policy.is_active == True
-    ).all()
-    
-    if not affected_policies:
-        return []
-    
-    payouts = []
-    
-    for policy in affected_policies:
-        # Get the rider's delivery status for Safe Return check
-        user = db.query(User).filter(User.id == policy.user_id).first()
-        is_delivering = user.delivery_status == "DELIVERING" if user else False
-        
-        # ── STEP 2: EXCLUSION CHECK (enhanced with Buyback + Safe Return) ──
-        exclusion_result = check_exclusion(
-            trigger_type=event.trigger_type,
-            has_buyback=policy.has_buyback,
-            is_delivering=is_delivering
+
+@router.get("/{claim_id}")
+async def get_claim(claim_id: str, db: AsyncSession = Depends(get_db)):
+    try:
+        result = await db.execute(select(Claim).where(Claim.id == claim_id))
+        claim = result.scalar_one_or_none()
+        if not claim:
+            raise HTTPException(status_code=404, detail="Claim not found")
+        return {
+            "id": str(claim.id),
+            "policy_id": str(claim.policy_id),
+            "rider_id": str(claim.rider_id),
+            "trigger_type": claim.trigger_type,
+            "disruption_start": claim.disruption_start.isoformat() if claim.disruption_start else None,
+            "disruption_end": claim.disruption_end.isoformat() if claim.disruption_end else None,
+            "affected_zone_h3": claim.affected_zone_h3,
+            "srs_score": claim.srs_score,
+            "payout_percentage": claim.payout_percentage,
+            "calculated_payout_rs": claim.calculated_payout_rs,
+            "status": claim.status,
+            "fraud_flags": claim.fraud_flags or [],
+            "razorpay_payment_id": claim.razorpay_payment_id,
+            "created_at": claim.created_at.isoformat() if claim.created_at else None,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{claim_id}/approve")
+async def approve_claim(
+    claim_id: str,
+    db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(verify_admin),
+):
+    try:
+        result = await db.execute(select(Claim).where(Claim.id == claim_id))
+        claim = result.scalar_one_or_none()
+        if not claim:
+            raise HTTPException(status_code=404, detail="Claim not found")
+        claim.status = "approved"
+        await db.commit()
+        return {"message": "Claim approved", "claim_id": str(claim.id), "status": "approved"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{claim_id}/reject")
+async def reject_claim(
+    claim_id: str,
+    body: ClaimRejectRequest,
+    db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(verify_admin),
+):
+    try:
+        result = await db.execute(select(Claim).where(Claim.id == claim_id))
+        claim = result.scalar_one_or_none()
+        if not claim:
+            raise HTTPException(status_code=404, detail="Claim not found")
+        claim.status = "rejected"
+        claim.fraud_flags = (claim.fraud_flags or []) + [f"REJECTED: {body.reason}"]
+        await db.commit()
+        return {"message": "Claim rejected", "claim_id": str(claim.id), "reason": body.reason}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pending/list")
+async def get_pending_claims(
+    db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(verify_admin),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+):
+    try:
+        offset = (page - 1) * limit
+        result = await db.execute(
+            select(Claim)
+            .where(Claim.status.in_(["pending", "fraud_check"]))
+            .order_by(Claim.created_at.desc())
+            .offset(offset)
+            .limit(limit)
         )
-        
-        action = exclusion_result["action"]
-        
-        # HARD BLOCKED — skip this rider entirely
-        if action == "BLOCK":
-            continue
-        
-        # ── STEP 3: CALCULATE PAYOUT ──
-        base_payout = 400.0
-        if policy.tier == "Bronze":
-            base_payout = 200.0
-        elif policy.tier == "Gold":
-            base_payout = 600.0
-        elif policy.tier == "Platinum":
-            base_payout = 1000.0
-            
-        severity_multiplier = event.severity / 10.0
-        normal_payout = round(base_payout * severity_multiplier, 2)
-        
-        # Determine final payout based on exclusion action
-        final_payout = normal_payout
-        claim_status = "APPROVED_AND_PAID"
-        
-        if action == "BUYBACK_PARTIAL":
-            # Buyback: apply partial percentage or flat payout
-            flat = exclusion_result.get("flat_payout")
-            if flat:
-                final_payout = flat
-            else:
-                pct = exclusion_result.get("payout_percentage", 0.30)
-                final_payout = round(normal_payout * pct, 2)
-            claim_status = "BUYBACK_PARTIAL_PAID"
-            
-        elif action == "SAFE_RETURN":
-            # Safe Return: micro-payout capped at max
-            max_sr = exclusion_result.get("max_payout", 100.0)
-            final_payout = min(normal_payout, max_sr)
-            claim_status = "SAFE_RETURN_PAID"
-        
-        # ── STEP 4: CREATE CLAIM RECORD ──
-        claim = Claim(
-            policy_id=policy.id,
-            zone_id=event.zone_id,
-            trigger_reason=event.trigger_type,
-            payout_amount=final_payout,
-            status=claim_status
+        claims = result.scalars().all()
+
+        total_result = await db.execute(
+            select(func.count(Claim.id)).where(Claim.status.in_(["pending", "fraud_check"]))
         )
-        db.add(claim)
-        payouts.append(claim)
-        
-    db.commit()
-    
-    for claim in payouts:
-        db.refresh(claim)
-        
-    return payouts
+        total = total_result.scalar() or 0
 
-
-@router.get("/exclusions")
-def get_exclusions():
-    """
-    Returns the full list of excluded trigger categories (HARD + SOFT).
-    Used by the frontend onboarding flow for informed consent.
-    """
-    return {
-        "excluded_categories": get_exclusion_summary(),
-        "message": "These event types are excluded from Zoink-4-u coverage per IRDAI guidelines. "
-                   "SOFT exclusions may be partially covered via the Buyback add-on or Safe Return guarantee."
-    }
+        return {
+            "claims": [
+                {
+                    "id": str(c.id),
+                    "rider_id": str(c.rider_id),
+                    "trigger_type": c.trigger_type,
+                    "affected_zone_h3": c.affected_zone_h3,
+                    "srs_score": c.srs_score,
+                    "calculated_payout_rs": c.calculated_payout_rs,
+                    "status": c.status,
+                    "fraud_flags": c.fraud_flags or [],
+                    "created_at": c.created_at.isoformat() if c.created_at else None,
+                }
+                for c in claims
+            ],
+            "total": total,
+            "page": page,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

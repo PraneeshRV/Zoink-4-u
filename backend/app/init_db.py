@@ -122,7 +122,7 @@ def run_seed():
 
         for rd in SEED_RIDERS:
             rider = Rider(
-                id=uuid.uuid4(),
+                id=str(uuid.uuid4()),
                 aadhaar_token=create_aadhaar_token(rd["phone"]),
                 name=rd["name"],
                 phone=rd["phone"],
@@ -142,7 +142,7 @@ def run_seed():
             # Create active policy
             tier_cfg = TIER_CONFIG[rd["tier"]]
             policy = Policy(
-                id=uuid.uuid4(),
+                id=str(uuid.uuid4()),
                 rider_id=rider.id,
                 tier=rd["tier"],
                 weekly_premium_rs=tier_cfg["weekly_premium"],
@@ -171,7 +171,7 @@ def run_seed():
                     fraud_flags = ["HIGH_CLAIM_FREQUENCY"]
 
                 claim = Claim(
-                    id=uuid.uuid4(),
+                    id=str(uuid.uuid4()),
                     policy_id=policy.id,
                     rider_id=rider.id,
                     trigger_event_id=str(uuid.uuid4()),
@@ -195,7 +195,7 @@ def run_seed():
         # Create a couple of disruption events
         for i in range(3):
             event = DisruptionEvent(
-                id=uuid.uuid4(),
+                id=str(uuid.uuid4()),
                 event_type=random.choice(TRIGGER_TYPES),
                 zone_h3=SEED_RIDERS[i]["zone_h3"],
                 city=SEED_RIDERS[i]["city"],

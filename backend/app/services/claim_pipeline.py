@@ -127,7 +127,7 @@ async def run_claim_pipeline(disruption_event_id: str) -> dict:
                 calculated_payout = round(min(policy.max_weekly_payout_rs, raw_payout), 2)
 
                 claim = Claim(
-                    id=uuid.uuid4(),
+                    id=str(uuid.uuid4()),
                     policy_id=policy.id,
                     rider_id=rider.id,
                     trigger_event_id=str(event.id),
@@ -198,7 +198,7 @@ async def run_claim_pipeline(disruption_event_id: str) -> dict:
 
                 # 6. Audit log
                 audit = AuditLog(
-                    id=uuid.uuid4(),
+                    id=str(uuid.uuid4()),
                     entity_type="claim",
                     entity_id=str(claim.id),
                     action="auto_claim_pipeline",

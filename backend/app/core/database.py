@@ -1,18 +1,22 @@
+"""
+Database configuration — uses SQLite for demo, PostgreSQL for production.
+"""
 import os
 from dotenv import load_dotenv
 from sqlalchemy.orm import DeclarativeBase
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://zoink:zoink@localhost:5432/zoinkdb")
-DATABASE_URL_SYNC = os.getenv("DATABASE_URL_SYNC", "postgresql://zoink:zoink@localhost:5432/zoinkdb")
+# Use SQLite by default for zero-setup demo; switch to PostgreSQL via env vars
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./zoink.db")
+DATABASE_URL_SYNC = os.getenv("DATABASE_URL_SYNC", "sqlite:///./zoink.db")
 
 
 class Base(DeclarativeBase):
     pass
 
 
-# Lazy engine creation — only created when first accessed
+# Lazy engine creation
 _engine = None
 _async_session = None
 _sync_engine = None
@@ -49,27 +53,6 @@ def get_sync_session_maker():
         from sqlalchemy.orm import sessionmaker
         _SyncSession = sessionmaker(bind=get_sync_engine())
     return _SyncSession
-
-
-# Convenience accessors
-@property
-def engine():
-    return get_engine()
-
-
-@property
-def sync_engine():
-    return get_sync_engine()
-
-
-@property
-def SyncSession():
-    return get_sync_session_maker()
-
-
-@property
-def async_session():
-    return get_async_session_maker()
 
 
 async def get_db():

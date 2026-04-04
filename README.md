@@ -2,7 +2,7 @@
 
 **Parametric Income-Loss Insurance for Food Delivery Partners in India**
 
-**Guidewire DEVTrails 2026 | Phase 1 Final Submission | March 2026**
+**Guidewire DEVTrails 2026 | Phase 2 Final Submission | March 2026**
 
 [![Phase](https://img.shields.io/badge/Phase-1%20|%20Ideation%20%26%20Foundation-blue)]()
 [![Persona](https://img.shields.io/badge/Persona-Food%20Delivery%20Partners-orange)]()

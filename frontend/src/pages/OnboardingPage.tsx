@@ -4,14 +4,33 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { authAPI, policiesAPI, mlEngineAPI } from '../lib/api';
 import { useAuthStore } from '../store/useAuth';
+import MockPaymentModal from '../components/MockPaymentModal';
 
 const ZONES = [
-  { label: 'T. Nagar, Chennai', value: '8829e24dfffffff', city: 'Chennai' },
-  { label: 'Madhapur, Hyderabad', value: '8831a91dfffffff', city: 'Hyderabad' },
-  { label: 'Koramangala, Bengaluru', value: '883148c7fffffff', city: 'Bengaluru' },
-  { label: 'Andheri, Mumbai', value: '88292e3dfffffff', city: 'Mumbai' },
-  { label: 'Ernakulam, Kochi', value: '88316899fffffff', city: 'Kochi' },
-  { label: 'Connaught Place, Delhi', value: '88395cd7fffffff', city: 'Delhi' },
+  { label: 'Chennai, Tamil Nadu', value: '8829e24dfffffff', city: 'Chennai' },
+  { label: 'Hyderabad, Telangana', value: '8831a91dfffffff', city: 'Hyderabad' },
+  { label: 'Bengaluru, Karnataka', value: '883148c7fffffff', city: 'Bengaluru' },
+  { label: 'Mumbai, Maharashtra', value: '88292e3dfffffff', city: 'Mumbai' },
+  { label: 'Kochi, Kerala', value: '88316899fffffff', city: 'Kochi' },
+  { label: 'Delhi, NCT', value: '88395cd7fffffff', city: 'Delhi' },
+  { label: 'Pune, Maharashtra', value: '8844b259fffffff', city: 'Pune' },
+  { label: 'Kolkata, West Bengal', value: '8844f6bbfffffff', city: 'Kolkata' },
+  { label: 'Ahmedabad, Gujarat', value: '8844f2b1fffffff', city: 'Ahmedabad' },
+  { label: 'Jaipur, Rajasthan', value: '8844e135fffffff', city: 'Jaipur' },
+  { label: 'Surat, Gujarat', value: '8844e3cbfffffff', city: 'Surat' },
+  { label: 'Lucknow, Uttar Pradesh', value: '8844c219fffffff', city: 'Lucknow' },
+  { label: 'Kanpur, Uttar Pradesh', value: '8844cda7fffffff', city: 'Kanpur' },
+  { label: 'Nagpur, Maharashtra', value: '8844a493fffffff', city: 'Nagpur' },
+  { label: 'Indore, Madhya Pradesh', value: '8844f285fffffff', city: 'Indore' },
+  { label: 'Patna, Bihar', value: '8844d5c9fffffff', city: 'Patna' },
+  { label: 'Bhopal, Madhya Pradesh', value: '8844d187fffffff', city: 'Bhopal' },
+  { label: 'Visakhapatnam, Andhra Pradesh', value: '8844c833fffffff', city: 'Visakhapatnam' },
+  { label: 'Vadodara, Gujarat', value: '8844f129fffffff', city: 'Vadodara' },
+  { label: 'Ludhiana, Punjab', value: '8844d32dfffffff', city: 'Ludhiana' },
+  { label: 'Agra, Uttar Pradesh', value: '8844c4b5fffffff', city: 'Agra' },
+  { label: 'Nashik, Maharashtra', value: '8844e781fffffff', city: 'Nashik' },
+  { label: 'Varanasi, Uttar Pradesh', value: '8844d939fffffff', city: 'Varanasi' },
+  { label: 'Coimbatore, Tamil Nadu', value: '8844b1c3fffffff', city: 'Coimbatore' },
 ];
 
 const TIERS = [
@@ -48,6 +67,7 @@ export default function OnboardingPage() {
   const [premiums, setPremiums] = useState<Record<string, number>>({});
   const [loadingPremiums, setLoadingPremiums] = useState(false);
   const [riderId, setRiderId] = useState('');
+  const [showPayment, setShowPayment] = useState(false);
 
   const handleSendOTP = () => {
     if (!name || !phone || !aadhaarLast4) {
@@ -93,27 +113,19 @@ export default function OnboardingPage() {
     setLoadingPremiums(true);
     const results: Record<string, number> = {};
     for (const tier of TIERS) {
-      try {
-        const res = await policiesAPI.getQuote({ rider_id: riderId, tier: tier.id });
-        results[tier.id] = res.data.weekly_premium_rs;
-      } catch {
-        try {
-          const mlRes = await mlEngineAPI.calculatePremium({
-            zone_h3: zone, city: city || 'Chennai', tier: tier.id,
-            work_hours_per_week: 40, platform, zoink_score: 50,
-          });
-          results[tier.id] = mlRes.data.premium_rs;
-        } catch {
-          results[tier.id] = ({ bronze: 29, silver: 45, gold: 69, platinum: 99 } as any)[tier.id] || 29;
-        }
-      }
+      results[tier.id] = ({ bronze: 29, silver: 49, gold: 69, platinum: 99 } as any)[tier.id] || 29;
     }
     setPremiums(results);
     setLoadingPremiums(false);
   };
 
-  const handleSubscribe = async () => {
+  const handleSubscribe = () => {
     if (!selectedTier) { toast.error('Please select a plan'); return; }
+    setShowPayment(true);
+  };
+
+  const finalizeSubscription = async () => {
+    setShowPayment(false);
     setLoading(true);
     try {
       await policiesAPI.subscribe({ rider_id: riderId, tier: selectedTier });
@@ -291,9 +303,7 @@ export default function OnboardingPage() {
               <select className="input-field" value={platform} onChange={e => setPlatform(e.target.value)}>
                 <option value="swiggy">Swiggy</option>
                 <option value="zomato">Zomato</option>
-                <option value="zepto">Zepto</option>
-                <option value="amazon">Amazon Flex</option>
-                <option value="flipkart">Flipkart Quick</option>
+                <option value="uber_eats">Uber Eats</option>
               </select>
             </div>
             <div className="input-group">
@@ -384,12 +394,26 @@ export default function OnboardingPage() {
                 className="info-box accent"
                 style={{ marginBottom: 12 }}
               >
-                <span>🛡️</span>
-                <span>
-                  <strong>{TIERS.find(t => t.id === selectedTier)?.name} Shield</strong> —&nbsp;
-                  {TIERS.find(t => t.id === selectedTier)?.desc}.&nbsp;
-                  {TIERS.find(t => t.id === selectedTier)?.triggers} disruption triggers covered.
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <span>🛡️</span>
+                    <span>
+                      <strong>{TIERS.find(t => t.id === selectedTier)?.name} Shield</strong> —&nbsp;
+                      {TIERS.find(t => t.id === selectedTier)?.desc}.&nbsp;
+                      {TIERS.find(t => t.id === selectedTier)?.triggers} disruption triggers covered.
+                    </span>
+                  </div>
+                  
+                  <div style={{ padding: '8px 12px', background: 'rgba(0,0,0,0.15)', borderRadius: 8, fontSize: '0.85rem' }}>
+                    <strong>✅ Dynamic Coverage for {city}:</strong><br/>
+                    {['Mumbai', 'Chennai', 'Kochi'].includes(city) ? 'Includes premium Heavy Rainfall and Urban Flooding coverage.' : 
+                     ['Delhi', 'Lucknow'].includes(city) ? 'Includes Severe AQI (GRAP-IV) and Winter Fog disruption coverage.' : 
+                     'Includes standard Heatwave, Rainfall, and Gridlock protection.'}
+                    <div style={{ marginTop: 6, color: '#ef4444' }}>
+                      <strong>❌ Exclusions:</strong> No coverage for health, accident or vehicle repairs.
+                    </div>
+                  </div>
+                </div>
               </motion.div>
             )}
 
@@ -403,6 +427,14 @@ export default function OnboardingPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {showPayment && selectedTier && (
+        <MockPaymentModal 
+          amount={(premiums[selectedTier] || 0)} 
+          onClose={() => setShowPayment(false)} 
+          onSuccess={finalizeSubscription} 
+        />
+      )}
     </div>
   );
 }

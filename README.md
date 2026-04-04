@@ -287,6 +287,19 @@ SRS = [(Base Severity x Seasonal Risk x Supply/Regulatory Factor)
 | 12 | Platform Risk | Recovery speed differences across platforms |
 | 13 | Zoink Score | Dynamic reputation factor |
 
+### Strict Coverage Exclusions
+
+To keep premiums affordable (₹29-₹69/week) and the risk pool sustainable, Zoink-4-u only covers **parametric, involuntary, and external** disruptions. The following are strictly **excluded** from coverage:
+
+1. **War & Insurrection:** Unbounded nationwide risk.
+2. **Terrorism & Sabotage:** Covered under separate national pools.
+3. **Pandemics/Epidemics:** Long-tail, multi-month interruptions.
+4. **Nuclear & Biological Events:** Catastrophic, infinite-duration events.
+5. **Platform Account Actions:** Account bans, suspensions, or app restructuring (these are labor issues, not external disruptions).
+6. **Voluntary Non-Work:** Choosing to stay offline creates moral hazard.
+7. **Pre-Existing Events:** Disruptions publicly announced *before* policy activation (prevents gaming the system)..
+
+
 ### SRS to Payout Percentage (Moral Hazard Prevention)
 
 Paying 100% for a minor drizzle creates moral hazard: riders start *preferring* rain days. Our sliding scale eliminates this:

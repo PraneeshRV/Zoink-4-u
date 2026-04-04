@@ -249,24 +249,21 @@ export default function OnboardingPage() {
               </>
             )}
 
-            <div style={{ textAlign: 'center', marginTop: 24 }}>
-              <span className="text-sm text-secondary">Already registered? </span>
-              <button
-                className="btn-ghost"
-                style={{ color: 'var(--accent-400)', fontWeight: 600, fontSize: '0.9rem', padding: '4px 8px' }}
-                onClick={() => {
-                  const p = prompt('Enter your registered phone number:');
-                  if (p) {
-                    authAPI.login({ phone: p, mock_otp: '123456' })
-                      .then(r => {
-                        login(r.data.access_token, r.data.rider_id, r.data.name);
-                        navigate('/dashboard');
-                      })
-                      .catch(() => toast.error('Login failed'));
-                  }
-                }}
-              >
-                Log In
+            <div style={{ textAlign: 'center', marginTop: 20 }}>
+              <p className="text-sm text-secondary">
+                Already registered?{' '}
+                <button className="btn-ghost" style={{ color: 'var(--primary-400)', fontWeight: 600 }}
+                  onClick={() => navigate('/login')}>
+                  Log In
+                </button>
+              </p>
+            </div>
+
+            {/* Admin link */}
+            <div style={{ textAlign: 'center', marginTop: 8 }}>
+              <button className="btn-ghost text-xs" style={{ color: 'var(--text-hint)' }}
+                onClick={() => navigate('/admin')}>
+                🔧 Admin Panel
               </button>
             </div>
           </motion.div>

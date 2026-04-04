@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from './store/useAuth';
 import OnboardingPage from './pages/OnboardingPage';
+import LoginPage from './pages/LoginPage';
 import RiderDashboard from './pages/RiderDashboard';
 import PolicyPage from './pages/PolicyPage';
 import ClaimsPage from './pages/ClaimsPage';
@@ -62,6 +63,12 @@ export default function App() {
           <Route path="/onboarding" element={
             <div className="app-container">
               <PageTransition><OnboardingPage /></PageTransition>
+            </div>
+          } />
+          
+          <Route path="/login" element={
+            <div className="app-container">
+              <PageTransition><LoginPage /></PageTransition>
             </div>
           } />
 

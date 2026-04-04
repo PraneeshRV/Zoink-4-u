@@ -195,22 +195,11 @@ export default function OnboardingPage() {
               </>
             )}
 
-            {/* Login link */}
             <div style={{ textAlign: 'center', marginTop: 20 }}>
               <p className="text-sm text-secondary">
                 Already registered?{' '}
                 <button className="btn-ghost" style={{ color: 'var(--primary-400)', fontWeight: 600 }}
-                  onClick={() => {
-                    const p = prompt('Enter your phone number:');
-                    if (p) {
-                      authAPI.login({ phone: p, mock_otp: '123456' })
-                        .then(r => {
-                          login(r.data.access_token, r.data.rider_id, r.data.name);
-                          navigate('/dashboard');
-                        })
-                        .catch(() => toast.error('Login failed'));
-                    }
-                  }}>
+                  onClick={() => navigate('/login')}>
                   Log In
                 </button>
               </p>

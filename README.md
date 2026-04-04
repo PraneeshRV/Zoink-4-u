@@ -762,7 +762,7 @@ Our fraud detection architecture is designed for data minimisation by default. I
 - [x] H3 hexagonal hyper-local zoning strategy
 - [x] Business case with unit economics, scenario modelling, and break-even analysis
 - [x] Regulatory compliance path: IRDAI Use and File + Aadhaar Act + e-Shram + DPDP Act
-- [ ] 2-minute strategy video
+- [x] 2-minute strategy video
 
 ### Phase 2: Core Platform Build (March 21 to April 4)
 

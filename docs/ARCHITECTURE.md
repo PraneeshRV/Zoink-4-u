@@ -161,7 +161,7 @@ Responsibilities:
 - Worker profile management
 - Zone selection & shift hours
 - Risk profile storage
-- GigShield Trust Score tracking
+- zoink-4-u Trust Score tracking
 
 #### Policy Service
 - Plan catalog (Basic / Standard / Premium)

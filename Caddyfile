@@ -1,0 +1,16 @@
+zoink4u.praneeshrv.me {
+    # Route API requests to the backend, stripping the "/api" prefix
+    handle_path /api/* {
+        reverse_proxy backend:8000
+    }
+    
+    # Route ML requests to the ML engine, stripping the "/ml" prefix
+    handle_path /ml/* {
+        reverse_proxy ml_engine:8001
+    }
+    
+    # Route everything else to the frontend React app
+    handle {
+        reverse_proxy frontend:80
+    }
+}

@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  caddy:
+    image: caddy:alpine
+    container_name: zoink_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
   backend:
     build:
       context: ./backend
@@ -28,14 +42,15 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Default fallback URLs if not specified. 
-        # When deploying on your VPS, change http://localhost to http://your-vps-ip or domain before building.
-        - VITE_API_BASE_URL=http://localhost:8000
-        - VITE_ML_BASE_URL=http://localhost:8001
+        # Pass the secure domains to the frontend during build
+        - VITE_API_BASE_URL=https://zoink4u.praneeshrv.me/api
+        - VITE_ML_BASE_URL=https://zoink4u.praneeshrv.me/ml
     container_name: zoink_frontend
-    ports:
-      - "80:80"
     depends_on:
       - backend
       - ml_engine
     restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

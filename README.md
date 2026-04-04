@@ -813,6 +813,6 @@ Our fraud detection architecture is designed for data minimisation by default. I
 
 - **GitHub:** [https://github.com/PraneeshRV/Zoink-4-u](https://github.com/PraneeshRV/Zoink-4-u)
 - **Demo Video (Phase 1):** [Coming Soon]
-- **Live Prototype:** zoink4u.praneeshrv.me
+- **Live Prototype:** https://zoink4u.praneeshrv.me
 
 ---

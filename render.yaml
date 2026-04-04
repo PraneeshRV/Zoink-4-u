@@ -1,5 +1,19 @@
 services:
-  # Backend Web Service
+  # 1. Frontend Static Site
+  - type: web
+    name: zoink-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: "npm install && npm run build"
+    staticPublishPath: "./dist"
+    envVars:
+      # These will need to be updated with the generated render.com URLs once created
+      - key: VITE_API_BASE_URL
+        sync: false
+      - key: VITE_ML_BASE_URL
+        sync: false
+        
+  # 2. Backend Web Service
   - type: web
     name: zoink-backend
     env: python
@@ -16,7 +30,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.10.0
 
-  # ML Engine Web Service
+  # 3. ML Engine Web Service
   - type: web
     name: zoink-ml-engine
     env: python

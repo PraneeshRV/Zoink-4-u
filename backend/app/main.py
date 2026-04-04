@@ -18,10 +18,20 @@ from app.services.trigger_monitor import setup_scheduler
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("zoink")
 
+from contextlib import asynccontextmanager
+from app.core.database import get_sync_engine, Base
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Auto-create tables if they don't exist
+    Base.metadata.create_all(bind=get_sync_engine())
+    yield
+
 app = FastAPI(
     title="Zoink-4-u Core Backend",
     description="Parametric income-loss insurance for gig delivery workers in India",
     version="2.0.0",
+    lifespan=lifespan,
 )
 
 # CORS — allow frontend on localhost:5173

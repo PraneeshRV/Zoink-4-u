@@ -1,0 +1,28 @@
+services:
+  # Backend Web Service
+  - type: web
+    name: zoink-backend
+    env: python
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: WAQI_API_KEY
+        sync: false
+      - key: TOMTOM_API_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.10.0
+
+  # ML Engine Web Service
+  - type: web
+    name: zoink-ml-engine
+    env: python
+    rootDir: ml_engine
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0

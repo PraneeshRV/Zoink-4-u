@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: zoink_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+
+  ml_engine:
+    build:
+      context: ./ml_engine
+      dockerfile: Dockerfile
+    container_name: zoink_ml_engine
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./ml_engine/.env
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Default fallback URLs if not specified. 
+        # When deploying on your VPS, change http://localhost to http://your-vps-ip or domain before building.
+        - VITE_API_BASE_URL=http://localhost:8000
+        - VITE_ML_BASE_URL=http://localhost:8001
+    container_name: zoink_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - ml_engine
+    restart: unless-stopped

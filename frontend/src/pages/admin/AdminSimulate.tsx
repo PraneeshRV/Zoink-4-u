@@ -14,19 +14,21 @@ const ZONES = [
 ];
 
 const EVENT_TYPES = [
-  { value: 'T1_HEAVY_RAIN', label: '🌧️ Heavy Rain', icon: '🌧️' },
-  { value: 'T3_SEVERE_AQI', label: '😷 Severe AQI', icon: '😷' },
-  { value: 'T4_EXTREME_HEAT', label: '🌡️ Extreme Heat', icon: '🌡️' },
-  { value: 'T9_GRIDLOCK', label: '🚗 Gridlock', icon: '🚗' },
-  { value: 'T10_CURFEW', label: '🚨 Curfew', icon: '🚨' },
-  { value: 'T17_PLATFORM_CRASH', label: '💥 Platform Crash', icon: '💥' },
+  { value: 'T1_HEAVY_RAIN', label: 'Heavy Rainfall', icon: '🌧️' },
+  { value: 'T3_SEVERE_AQI', label: 'Severe AQI', icon: '😷' },
+  { value: 'T4_EXTREME_HEAT', label: 'Extreme Heat', icon: '🔥' },
+  { value: 'T9_GRIDLOCK', label: 'Traffic Gridlock', icon: '🚗' },
+  { value: 'T10_CURFEW', label: 'Curfew', icon: '🚨' },
+  { value: 'T17_PLATFORM_CRASH', label: 'Platform Crash', icon: '📱' },
 ];
 
-interface PipelineStep {
-  icon: string;
-  text: string;
-  done: boolean;
-}
+const PIPELINE_LABELS = [
+  { icon: '🌍', text: 'Disruption event registered in zone' },
+  { icon: '🔍', text: 'Scanning active policies in affected hexagons' },
+  { icon: '⚙️', text: 'Running 5-layer fraud validation pipeline' },
+  { icon: '📊', text: 'Calculating SRS score and payout percentages' },
+  { icon: '💸', text: 'Initiating UPI payouts via Razorpay sandbox' },
+];
 
 export default function AdminSimulate() {
   const [eventType, setEventType] = useState('T1_HEAVY_RAIN');
@@ -35,49 +37,13 @@ export default function AdminSimulate() {
   const [severity, setSeverity] = useState(7);
   const [duration, setDuration] = useState(4);
   const [running, setRunning] = useState(false);
-  const [steps, setSteps] = useState<PipelineStep[]>([]);
+  const [completedStep, setCompletedStep] = useState(-1);
   const [result, setResult] = useState<any>(null);
   const navigate = useNavigate();
 
-  const animateSteps = (pipelineResult: any) => {
-    const claimsCreated = pipelineResult?.pipeline_result?.claims_created || 0;
-    const totalPayout = pipelineResult?.pipeline_result?.total_payout || 0;
-    const claimsApproved = pipelineResult?.pipeline_result?.claims_approved || 0;
-
-    const allSteps: PipelineStep[] = [
-      { icon: '✅', text: 'Disruption event created', done: false },
-      { icon: '✅', text: `${claimsCreated} active policies found in zone`, done: false },
-      { icon: '⏳', text: 'Running 5-layer fraud validation...', done: false },
-      { icon: '✅', text: 'Fraud validation complete', done: false },
-      { icon: '✅', text: 'Payouts initiated via Razorpay sandbox', done: false },
-    ];
-
-    allSteps.forEach((step, i) => {
-      setTimeout(() => {
-        setSteps(prev => {
-          const next = [...allSteps.slice(0, i + 1)];
-          next.forEach(s => s.done = true);
-          if (i === 2) next[i].icon = '⏳';
-          else next[i].icon = '✅';
-          return next;
-        });
-      }, (i + 1) * 800);
-    });
-
-    setTimeout(() => {
-      setResult({
-        riders_paid: claimsApproved,
-        total_payout: totalPayout,
-        avg_payout: pipelineResult?.pipeline_result?.avg_payout || 0,
-        claims_created: claimsCreated,
-        fraud_flagged: pipelineResult?.pipeline_result?.claims_fraud_flagged || 0,
-      });
-    }, allSteps.length * 800 + 500);
-  };
-
   const handleTrigger = async () => {
     setRunning(true);
-    setSteps([]);
+    setCompletedStep(-1);
     setResult(null);
 
     try {
@@ -90,41 +56,78 @@ export default function AdminSimulate() {
         duration_hours: duration,
       });
       toast.success('Disruption triggered!');
-      animateSteps(res.data);
+
+      // Animate steps
+      for (let i = 0; i < PIPELINE_LABELS.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 650));
+        setCompletedStep(i);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const pr = res.data?.pipeline_result || {};
+      setResult({
+        riders_paid: pr.claims_approved || 0,
+        total_payout: pr.total_payout || 0,
+        avg_payout: pr.avg_payout || 0,
+        claims_created: pr.claims_created || 0,
+        fraud_flagged: pr.claims_fraud_flagged || 0,
+      });
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Simulation failed');
       setRunning(false);
+      setCompletedStep(-1);
     }
   };
 
+  const selectedEvent = EVENT_TYPES.find(e => e.value === eventType);
+  const srsLevel = severity >= 8 ? 'Severe → 100% payout' : severity >= 5 ? 'Standard → 80% payout' : 'Minor → 60% payout';
+  const srsColor = severity >= 8 ? 'var(--danger)' : severity >= 5 ? 'var(--warning)' : 'var(--info)';
+
   return (
     <div>
-      <h1 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: 8 }}>🎮 Disruption Simulator</h1>
-      <p className="text-secondary mb-24">Trigger a disruption event and watch the auto-claim pipeline in action</p>
+      <div style={{ marginBottom: 24 }}>
+        <h1 className="admin-page-title">Disruption Simulator</h1>
+        <p className="admin-page-sub">Trigger a disruption and observe the full auto-claim pipeline in real time</p>
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-        {/* Left: Form */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
+        {/* Left: Config */}
         <div className="card" style={{ padding: 24 }}>
-          <h3 style={{ fontWeight: 700, marginBottom: 16 }}>Configure Event</h3>
+          <div style={{ fontWeight: 800, fontSize: '1rem', marginBottom: 20 }}>Configure Event</div>
 
+          {/* Event type picker */}
           <div className="input-group">
             <label className="input-label">Event Type</label>
-            <select className="input-field" value={eventType}
-              onChange={e => setEventType(e.target.value)}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {EVENT_TYPES.map(et => (
-                <option key={et.value} value={et.value}>{et.label}</option>
+                <button
+                  key={et.value}
+                  onClick={() => setEventType(et.value)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                    border: '1px solid',
+                    transition: 'all 0.15s ease',
+                    ...(eventType === et.value
+                      ? { background: 'var(--accent-soft)', borderColor: 'var(--accent-500)', color: 'var(--accent-400)' }
+                      : { background: 'var(--bg-raised)', borderColor: 'var(--border-default)', color: 'var(--text-secondary)' }
+                    ),
+                    fontSize: '0.82rem', fontWeight: 600,
+                  }}
+                >
+                  <span>{et.icon}</span> {et.label}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           <div className="input-group">
             <label className="input-label">Zone</label>
-            <select className="input-field" value={zone}
-              onChange={e => {
-                setZone(e.target.value);
-                const z = ZONES.find(z => z.value === e.target.value);
-                if (z) setCity(z.city);
-              }}>
+            <select className="input-field" value={zone} onChange={e => {
+              setZone(e.target.value);
+              const z = ZONES.find(z => z.value === e.target.value);
+              if (z) setCity(z.city);
+            }}>
               {ZONES.map(z => (
                 <option key={z.value} value={z.value}>{z.label}</option>
               ))}
@@ -132,121 +135,171 @@ export default function AdminSimulate() {
           </div>
 
           <div className="input-group">
-            <label className="input-label">City</label>
-            <input className="input-field" value={city} onChange={e => setCity(e.target.value)} />
-          </div>
-
-          <div className="input-group">
-            <label className="input-label">Severity: {severity}/10</label>
-            <input type="range" className="range-slider" min={1} max={10} value={severity}
-              onChange={e => setSeverity(Number(e.target.value))} />
-            <div className="flex justify-between text-xs text-hint mt-4">
-              <span>Minor</span><span>Severe</span>
+            <label className="input-label">Severity: {severity}/10 — <span style={{ color: srsColor }}>{srsLevel}</span></label>
+            <input
+              type="range" min={1} max={10} value={severity}
+              onChange={e => setSeverity(Number(e.target.value))}
+              style={{ width: '100%', accentColor: 'var(--accent-600)', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between' }} className="text-xs text-hint">
+              <span>1 — Minor</span><span>10 — Catastrophic</span>
             </div>
           </div>
 
           <div className="input-group">
-            <label className="input-label">Duration: {duration} hours</label>
-            <input type="range" className="range-slider" min={1} max={12} value={duration}
-              onChange={e => setDuration(Number(e.target.value))} />
-            <div className="flex justify-between text-xs text-hint mt-4">
+            <label className="input-label">Duration: {duration} hour{duration > 1 ? 's' : ''}</label>
+            <input
+              type="range" min={1} max={12} value={duration}
+              onChange={e => setDuration(Number(e.target.value))}
+              style={{ width: '100%', accentColor: 'var(--accent-600)', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between' }} className="text-xs text-hint">
               <span>1 hr</span><span>12 hrs</span>
             </div>
           </div>
 
+          {/* Preview */}
+          <div className="card-accent" style={{ marginBottom: 16 }}>
+            <div className="text-xs text-secondary" style={{ marginBottom: 4 }}>Simulation Preview</div>
+            <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+              {selectedEvent?.icon} {selectedEvent?.label}
+            </div>
+            <div className="text-sm text-secondary" style={{ marginTop: 2 }}>
+              {city} · Severity {severity}/10 · {duration}h duration
+            </div>
+          </div>
+
           <button
-            className="trigger-btn mt-16"
+            className="btn btn-primary"
             onClick={handleTrigger}
             disabled={running}
+            style={{ fontSize: '0.95rem', fontWeight: 700 }}
           >
             {running ? (
-              <><span className="spinner" style={{ borderTopColor: 'white' }} /> Pipeline Running...</>
+              <><span className="spinner" /> Running Pipeline…</>
             ) : (
-              <>🌧️ TRIGGER DISRUPTION</>
+              `${selectedEvent?.icon} Fire Disruption`
             )}
           </button>
         </div>
 
-        {/* Right: Pipeline Status */}
-        <div>
-          {steps.length > 0 && (
-            <div className="card" style={{ padding: 24 }}>
-              <h3 style={{ fontWeight: 700, marginBottom: 16 }}>Pipeline Status</h3>
-              <div className="sim-steps">
-                <AnimatePresence>
-                  {steps.map((step, i) => (
-                    <motion.div
-                      key={i}
-                      className="sim-step"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0, duration: 0.3 }}
-                      style={{ animationDelay: '0s', opacity: 1 }}
-                    >
-                      <span className="step-icon">{step.icon}</span>
-                      <span>{step.text}</span>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
+        {/* Right: Pipeline + Result */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Pipeline steps */}
+          <div className="card" style={{ padding: 24 }}>
+            <div style={{ fontWeight: 800, fontSize: '1rem', marginBottom: 20 }}>
+              Auto-Claim Pipeline
             </div>
-          )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {PIPELINE_LABELS.map((step, i) => {
+                const isDone = completedStep >= i;
+                const isActive = running && completedStep === i - 1;
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: i < PIPELINE_LABELS.length - 1 ? 20 : 0, position: 'relative' }}>
+                    {/* Line */}
+                    {i < PIPELINE_LABELS.length - 1 && (
+                      <div style={{
+                        position: 'absolute', left: 14, top: 28, bottom: 0, width: 2,
+                        background: isDone ? 'var(--accent-600)' : 'var(--border-default)',
+                        transition: 'background 0.3s ease',
+                      }} />
+                    )}
+                    {/* Circle */}
+                    <div style={{
+                      width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '0.85rem', zIndex: 1,
+                      background: isDone ? 'var(--accent-600)' : isActive ? 'var(--bg-overlay)' : 'var(--bg-raised)',
+                      border: isDone ? '2px solid var(--accent-600)' : '2px solid var(--border-default)',
+                      transition: 'all 0.3s ease',
+                    }}>
+                      {isDone ? '✓' : isActive ? <span className="spinner" style={{ width: 12, height: 12, borderWidth: 2, borderTopColor: 'var(--accent-400)' }} /> : step.icon}
+                    </div>
+                    <div style={{ paddingTop: 4 }}>
+                      <div style={{
+                        fontSize: '0.9rem', fontWeight: isDone ? 600 : 400,
+                        color: isDone ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        transition: 'color 0.3s ease',
+                      }}>
+                        {step.text}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-          {/* Results Card */}
-          {result && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4 }}
-              className="card-gradient mt-16"
-              style={{ padding: 24 }}
-            >
-              <h3 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: 16 }}>
-                🎉 Pipeline Complete
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div>
-                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', opacity: 0.8 }}>Claims Created</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'JetBrains Mono' }}>
-                    {result.claims_created}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', opacity: 0.8 }}>Riders Paid</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'JetBrains Mono' }}>
-                    {result.riders_paid}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', opacity: 0.8 }}>Total Payout</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'JetBrains Mono' }}>
-                    ₹{result.total_payout.toFixed(2)}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', opacity: 0.8 }}>Avg per Rider</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'JetBrains Mono' }}>
-                    ₹{result.avg_payout.toFixed(2)}
-                  </div>
-                </div>
-              </div>
-              {result.fraud_flagged > 0 && (
-                <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: 8 }}>
-                  <span className="text-sm">⚠️ {result.fraud_flagged} claims flagged for fraud review</span>
-                </div>
-              )}
-              <button
-                className="btn btn-outline mt-16"
-                style={{ borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}
-                onClick={() => {
-                  setRunning(false);
-                  navigate('/admin/claims');
-                }}
+          {/* Result card */}
+          <AnimatePresence>
+            {result && (
+              <motion.div
+                initial={{ opacity: 0, y: 16, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+                className="card"
+                style={{ padding: 24, border: '1px solid rgba(81,207,102,0.3)', background: 'rgba(81,207,102,0.05)' }}
               >
-                View Claims →
-              </button>
-            </motion.div>
-          )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                  <span style={{ fontSize: '1.3rem' }}>🎉</span>
+                  <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>Pipeline Complete</div>
+                </div>
+
+                <div className="grid-2" style={{ gap: 16, marginBottom: 16 }}>
+                  <div className="stat-cell">
+                    <div className="stat-label">Claims Created</div>
+                    <div className="font-mono" style={{ fontSize: '1.5rem', fontWeight: 800 }}>
+                      {result.claims_created}
+                    </div>
+                  </div>
+                  <div className="stat-cell">
+                    <div className="stat-label">Riders Paid</div>
+                    <div className="font-mono" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--success)' }}>
+                      {result.riders_paid}
+                    </div>
+                  </div>
+                  <div className="stat-cell">
+                    <div className="stat-label">Total Payout</div>
+                    <div className="font-mono" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--success)' }}>
+                      ₹{result.total_payout.toFixed(0)}
+                    </div>
+                  </div>
+                  <div className="stat-cell">
+                    <div className="stat-label">Avg per Rider</div>
+                    <div className="font-mono" style={{ fontSize: '1.5rem', fontWeight: 800 }}>
+                      ₹{result.avg_payout.toFixed(0)}
+                    </div>
+                  </div>
+                </div>
+
+                {result.fraud_flagged > 0 && (
+                  <div className="trigger-banner" style={{ marginBottom: 16 }}>
+                    <span>⚠️</span>
+                    <span className="text-sm">
+                      <strong>{result.fraud_flagged}</strong> claim{result.fraud_flagged > 1 ? 's' : ''} flagged for fraud review
+                    </span>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => { setRunning(false); setCompletedStep(-1); setResult(null); }}
+                    style={{ flex: 1 }}
+                  >
+                    Reset
+                  </button>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => navigate('/admin/claims')}
+                    style={{ flex: 2 }}
+                  >
+                    View Claims →
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

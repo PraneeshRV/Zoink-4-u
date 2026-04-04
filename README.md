@@ -766,14 +766,14 @@ Our fraud detection architecture is designed for data minimisation by default. I
 
 ### Phase 2: Core Platform Build (March 21 to April 4)
 
-- [ ] WhatsApp Bot onboarding with Aadhaar OTP verification
-- [ ] PWA registration flow with zone selection and shift configuration
-- [ ] DGRI dynamic premium calculation engine (gradient boosting on synthetic data)
-- [ ] Parametric trigger engine with 3-5 live triggers (rainfall, AQI, temperature)
-- [ ] Auto-claim pipeline with Isolation Forest fraud detection
-- [ ] Zoink Score engine (initial version)
-- [ ] Razorpay sandbox UPI payout simulation
-- [ ] End-to-end integration test: registration to subscription to trigger to payout
+ - [x] JWT Authentication & User Management
+ - [x] Rider Profiles API
+ - [x] Parametric Policies System
+ - [x] Adverse Event Monitoring Scheduler
+ - [x] Automated Claims Processing Pipeline
+ - [x] Financial Payout Execution Service
+ - [x] Administrative Control Dashboard
+ - [x]  Database Schema Initialization & Seeding
 
 ### Phase 3: Scale and Polish (April 5-17)
 

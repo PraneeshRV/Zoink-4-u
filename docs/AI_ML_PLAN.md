@@ -38,7 +38,7 @@ flowchart LR
 | `worker_tenure_days` | Database | Integer | How long the worker has been on the platform |
 | `past_claim_count` | Database | Integer | Number of past approved claims |
 | `past_claim_ratio` | Database | Float | Claims / weeks subscribed |
-| `trust_score` | Trust Engine | Float | GigShield Trust Score (0-100) |
+| `trust_score` | Trust Engine | Float | zoink-4-u Trust Score (0-100) |
 | `shift_hours` | Profile | Float | Registered daily working hours |
 | `plan_tier` | Selection | Categorical | Basic / Standard / Premium |
 
@@ -171,7 +171,7 @@ def check_fraud(claim_data):
 
 ---
 
-## Model 3: GigShield Trust Score Engine
+## Model 3: Shield Trust Score Engine
 
 ### Problem
 We need a dynamic reputation system that rewards honest workers and penalizes suspicious ones, creating a long-term incentive for genuine claims.

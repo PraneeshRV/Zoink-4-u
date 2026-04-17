@@ -1367,3 +1367,106 @@ select.input-field {
   .payout-tracker { padding: 14px; }
 }
 
+/* ─── Modal Overlay ─── */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* ─── Accordion (Trigger Categories) ─── */
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all var(--transition-fast);
+}
+
+.accordion-header:hover {
+  background: var(--surface-elevated);
+  border-color: var(--primary-500);
+}
+
+.accordion-body {
+  padding: 12px 14px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  margin-top: -4px;
+}
+
+/* ─── Step dots with labels ─── */
+.step-dot {
+  position: relative;
+}
+
+/* ─── Platform selector buttons ─── */
+.platform-btn {
+  transition: all var(--transition-fast) !important;
+}
+.platform-btn:hover {
+  border-color: var(--primary-400) !important;
+  transform: translateY(-1px);
+}
+.platform-btn.selected {
+  box-shadow: 0 0 12px rgba(20, 184, 166, 0.2);
+}
+
+/* ─── Cursor pointer ─── */
+.cursor-pointer { cursor: pointer; }
+
+/* ─── P-20 utility ─── */
+.p-20 { padding: 20px; }
+
+/* ─── Text utilities ─── */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+/* ─── Flex utilities ─── */
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-12 { gap: 12px; }
+
+/* ─── Risk Card ─── */
+.risk-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all var(--transition-fast);
+}
+
+.risk-card:hover {
+  border-color: var(--primary-500);
+}
+
+.risk-icon { font-size: 1.4rem; }
+.risk-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-hint); }
+.risk-value { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 1.1rem; }

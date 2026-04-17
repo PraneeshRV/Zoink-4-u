@@ -16,6 +16,7 @@ _model = None
 _metrics = {}
 
 BASE_RATES = {"bronze": 29, "silver": 45, "gold": 69, "platinum": 99}
+MIN_RATES = {"bronze": 29, "silver": 40, "gold": 60, "platinum": 85}
 TIER_ENCODING = {"bronze": 0, "silver": 1, "gold": 2, "platinum": 3}
 
 FEATURE_NAMES = [
@@ -134,11 +135,13 @@ def predict_premium(features: list, tier: str = "bronze",
     try:
         X = np.array([features])
         raw_premium = float(_model.predict(X)[0])
-        raw_premium = max(15, raw_premium)  # floor at ₹15
+        # Floor at the tier's minimum rate — dynamic pricing never goes below minimum
+        tier_floor = MIN_RATES.get(tier, 29)
+        raw_premium = max(tier_floor, raw_premium)
 
         # Apply 2% weekly earnings cap
         est_weekly_earnings = work_hours_per_week * 80
-        cap = est_weekly_earnings * 0.02
+        cap = max(est_weekly_earnings * 0.02, tier_floor)  # cap never below min
         final_premium = round(min(raw_premium, cap), 2)
 
         # Extract component factors for transparency

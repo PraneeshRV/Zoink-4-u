@@ -37,7 +37,7 @@ async def simulate_disruption(
     try:
         now = datetime.now(timezone.utc)
         event = DisruptionEvent(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             event_type=req.event_type,
             zone_h3=req.zone_h3,
             city=req.city,
@@ -85,7 +85,7 @@ async def pull_from_nasa(
         evt = events_data[0]
         now = datetime.now(timezone.utc)
         event = DisruptionEvent(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             event_type=evt["event_type"],
             zone_h3=evt["zone_h3"],
             city=evt["city"],

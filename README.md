@@ -2,6 +2,8 @@
 
 **Parametric Income-Loss Insurance for Food Delivery Partners in India**
 
+[🚀 View Pitch Deck Here](https://drive.google.com/drive/folders/1uQdYvr3mSrM2sjI8FAY92Flj7NFxT7zv?usp=sharing)
+
 **Guidewire DEVTrails 2026 | Phase 3 Final Submission | April 2026**
 
 [![Phase](https://img.shields.io/badge/Phase-3%20|%20Scale%20%26%20Optimise-blue)]()
@@ -814,6 +816,7 @@ Our fraud detection architecture is designed for data minimisation by default. I
 
 ## Links
 
+- **Pitch Deck:** [Google Drive](https://drive.google.com/drive/folders/1uQdYvr3mSrM2sjI8FAY92Flj7NFxT7zv?usp=sharing)
 - **GitHub:** [https://github.com/PraneeshRV/Zoink-4-u](https://github.com/PraneeshRV/Zoink-4-u)
 - **Live Prototype:** https://zoink4u.praneeshrv.me
 

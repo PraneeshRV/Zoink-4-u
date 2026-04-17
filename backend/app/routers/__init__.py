@@ -5,8 +5,10 @@ from app.routers.triggers import router as triggers_router
 from app.routers.claims import router as claims_router
 from app.routers.payouts import router as payouts_router
 from app.routers.admin import router as admin_router
+from app.routers.analytics import router as analytics_router
 
 __all__ = [
     "auth_router", "riders_router", "policies_router",
-    "triggers_router", "claims_router", "payouts_router", "admin_router",
+    "triggers_router", "claims_router", "payouts_router",
+    "admin_router", "analytics_router",
 ]

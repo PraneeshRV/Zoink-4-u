@@ -9,6 +9,8 @@ from app.core.auth import verify_admin
 from app.models.disruption_event import DisruptionEvent
 from app.services.external_apis import get_risk_conditions
 from app.services.claim_pipeline import run_claim_pipeline
+from app.services.nasa_eonet import fetch_nasa_events
+from app.schemas import TriggerSimulateRequest
 from app.schemas import TriggerSimulateRequest
 
 router = APIRouter(prefix="/triggers", tags=["Triggers"])
@@ -18,14 +20,9 @@ router = APIRouter(prefix="/triggers", tags=["Triggers"])
 async def get_current_conditions(
     zone_h3: str = Query(...),
     city: str = Query(""),
-    time_of_day_hour: int = Query(None),
-    vehicle_type: str = Query("scooter"),
-    rider_experience_months: int = Query(6),
 ):
     try:
-        conditions = await get_risk_conditions(
-            zone_h3, city, time_of_day_hour, vehicle_type, rider_experience_months
-        )
+        conditions = await get_risk_conditions(zone_h3, city)
         return conditions
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -40,7 +37,7 @@ async def simulate_disruption(
     try:
         now = datetime.now(timezone.utc)
         event = DisruptionEvent(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             event_type=req.event_type,
             zone_h3=req.zone_h3,
             city=req.city,
@@ -73,6 +70,56 @@ async def simulate_disruption(
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/nasa-pull")
+async def pull_from_nasa(
+    db: AsyncSession = Depends(get_db),
+    _admin: bool = Depends(verify_admin),
+):
+    try:
+        events_data = await fetch_nasa_events(limit=1, map_to_demo_zones=True)
+        if not events_data:
+            raise HTTPException(status_code=404, detail="No active NASA events found")
+            
+        evt = events_data[0]
+        now = datetime.now(timezone.utc)
+        event = DisruptionEvent(
+            id=uuid.uuid4(),
+            event_type=evt["event_type"],
+            zone_h3=evt["zone_h3"],
+            city=evt["city"],
+            severity=evt["severity"],
+            source_api=evt["source_api"],
+            raw_data=evt["raw_data"],
+            started_at=now,
+            ended_at=now + timedelta(hours=evt["duration_hours"]),
+            duration_hours=evt["duration_hours"],
+            is_active=True,
+        )
+        db.add(event)
+        await db.commit()
+        await db.refresh(event)
+
+        # Triggers pipeline
+        pipeline_result = await run_claim_pipeline(str(event.id))
+
+        return {
+            "event_id": str(event.id),
+            "event_type": event.event_type,
+            "zone_h3": event.zone_h3,
+            "city": event.city,
+            "severity": event.severity,
+            "duration_hours": event.duration_hours,
+            "pipeline_result": pipeline_result,
+            "nasa_message": f"Auto-generated claim pipeline based on `{evt['source_api']}`!"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @router.get("/active")

@@ -1,6 +1,9 @@
 #!/bin/bash
 echo "════════════════════════════════════════════════"
-echo "  🚀 Starting Zoink-4-u Phase 2 Architecture"
+echo "  🚀 Starting Zoink-4-u Phase 3 — Final Build"
+echo "  🧠 ML Models: Fraud | Risk | Premium | Forecast"
+echo "  📍 GPS Validation | 🕵️ Behavioral Analysis"
+echo "  💰 Instant Payouts | 📊 Predictive Analytics"
 echo "════════════════════════════════════════════════"
 
 # Check if PostgreSQL is running
@@ -56,6 +59,7 @@ cd ..
 
 # Start ML Engine on Port 8001
 echo "🧠 Starting ML Engine on http://localhost:8001..."
+echo "   (Models will be trained at startup — this may take a few seconds)"
 cd ml_engine
 uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload &
 ML_PID=$!
@@ -71,10 +75,12 @@ cd ..
 echo ""
 echo "════════════════════════════════════════════════"
 echo "  ✅ All services started!"
-echo "  📱 Frontend:  http://localhost:5173"
-echo "  🔧 Backend:   http://localhost:8000"
-echo "  🧠 ML Engine: http://localhost:8001"
-echo "  📊 API Docs:  http://localhost:8000/docs"
+echo "  📱 Frontend:   http://localhost:5173"
+echo "  🔧 Backend:    http://localhost:8000"
+echo "  🧠 ML Engine:  http://localhost:8001"
+echo "  📊 API Docs:   http://localhost:8000/docs"
+echo "  🤖 ML Status:  http://localhost:8001/models/status"
+echo "  🔐 Admin:      http://localhost:5173/admin (pass: admin123)"
 echo "════════════════════════════════════════════════"
 echo ""
 echo "Press Ctrl+C to stop all services"

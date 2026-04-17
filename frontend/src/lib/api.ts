@@ -84,6 +84,7 @@ export const triggersAPI = {
     event_type: string; zone_h3: string; city: string;
     severity: number; duration_hours: number;
   }) => api.post('/triggers/simulate', data),
+  nasaPull: () => api.post('/triggers/nasa-pull'),
   getActive: () => api.get('/triggers/active'),
 };
 
@@ -101,6 +102,9 @@ export const payoutsAPI = {
   process: (claimId: string) => api.post(`/payouts/process/${claimId}`),
   history: (riderId?: string) =>
     api.get(`/payouts/history${riderId ? `?rider_id=${riderId}` : ''}`),
+  getStatus: (payoutId: string) => api.get(`/payouts/status/${payoutId}`),
+  getActive: () => api.get('/payouts/active'),
+  webhookSim: (payoutId: string) => api.get(`/payouts/webhook-sim/${payoutId}`),
 };
 
 // ─── Admin ────────────────────────────────────────
@@ -113,6 +117,15 @@ export const adminAPI = {
   getDisruptionEvents: (active = false) =>
     api.get(`/admin/disruption-events?active=${active}`),
   getZoneHeatmap: () => api.get('/admin/zone-heatmap'),
+};
+
+// ─── Analytics ────────────────────────────────────
+export const analyticsAPI = {
+  getLossRatioTrend: (weeks = 8) =>
+    api.get(`/admin/analytics/loss-ratio-trend?weeks=${weeks}`),
+  getPredictions: () => api.get('/admin/analytics/predictions'),
+  getFraudStats: () => api.get('/admin/analytics/fraud-stats'),
+  getRevenue: () => api.get('/admin/analytics/revenue'),
 };
 
 // ─── ML Engine ────────────────────────────────────
@@ -131,6 +144,8 @@ export const mlEngineAPI = {
 
   getForecast: (zone_h3: string, city: string) =>
     mlApi.get(`/forecast/zone?zone_h3=${zone_h3}&city=${city}`),
+
+  getModelsStatus: () => mlApi.get('/models/status'),
 };
 
 export default api;

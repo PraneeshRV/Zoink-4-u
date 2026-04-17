@@ -1,5 +1,6 @@
 """
 Auto-claim pipeline: processes disruption events and creates claims automatically.
+Phase 3: Integrated GPS validation, behavioral analysis, and instant payouts.
 """
 import uuid
 import httpx
@@ -13,6 +14,9 @@ from app.models.policy import Policy
 from app.models.claim import Claim
 from app.models.disruption_event import DisruptionEvent
 from app.models.audit_log import AuditLog
+from app.services.gps_validator import validate_gps, generate_mock_gps, get_zone_center
+from app.services.behavioral_analyzer import analyze_rider_behavior, get_recent_claim_timestamps
+from app.services.payment_gateway import create_instant_payout
 
 logger = logging.getLogger("claim_pipeline")
 ML_ENGINE_URL = "http://localhost:8001"
@@ -58,7 +62,7 @@ async def update_zoink_score(session: AsyncSession, rider: Rider, has_fraud_flag
 
 
 async def check_fraud(claim_data: dict) -> dict:
-    """Call ML engine fraud check endpoint."""
+    """Call ML engine fraud check endpoint with enhanced features."""
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.post(f"{ML_ENGINE_URL}/fraud/check", json=claim_data)
@@ -69,10 +73,20 @@ async def check_fraud(claim_data: dict) -> dict:
         return {"fraud_score": 0.0, "flags": [], "recommendation": "approve"}
 
 
-async def process_payout(claim_id: str) -> dict:
-    """Process payout for an approved claim (mock/Razorpay)."""
-    txn_id = f"mock_txn_{uuid.uuid4().hex[:12]}"
-    return {"txn_id": txn_id, "status": "simulated"}
+async def process_payout(claim_id: str, amount: float, rider_name: str = "Rider") -> dict:
+    """Process instant payout via simulated Razorpay/UPI flow."""
+    result = create_instant_payout(
+        claim_id=claim_id,
+        amount=amount,
+        rider_name=rider_name,
+    )
+    return {
+        "txn_id": result.get("razorpay_payment_id", f"mock_txn_{uuid.uuid4().hex[:12]}"),
+        "status": result.get("status", "completed"),
+        "payout_id": result.get("payout_id"),
+        "upi_ref": result.get("payment_details", {}).get("upi_ref"),
+        "bank_ref": result.get("payment_details", {}).get("bank_ref"),
+    }
 
 
 async def run_claim_pipeline(disruption_event_id: str) -> dict:
@@ -80,7 +94,9 @@ async def run_claim_pipeline(disruption_event_id: str) -> dict:
     Main auto-claim pipeline:
     1. Load disruption event
     2. Find riders with active policies in affected zone
-    3. Create claims, run fraud checks, calculate payouts
+    3. GPS validation + behavioral analysis
+    4. Create claims, run ML fraud checks, calculate payouts
+    5. Process instant payouts via Razorpay/UPI simulation
     """
     async_session = get_async_session_maker()
     async with async_session() as session:
@@ -104,6 +120,9 @@ async def run_claim_pipeline(disruption_event_id: str) -> dict:
             claims_approved = 0
             claims_fraud_flagged = 0
             total_payout = 0.0
+            payout_details = []
+
+            zone_center_lat, zone_center_lon = get_zone_center(event.zone_h3)
 
             for rider in riders:
                 # Find active policy
@@ -117,7 +136,23 @@ async def run_claim_pipeline(disruption_event_id: str) -> dict:
                 if not policy:
                     continue
 
-                # 3. Create claim
+                # 3. GPS Validation (simulate GPS for pipeline)
+                mock_gps = generate_mock_gps(event.zone_h3, spoofed=False)
+                gps_result = validate_gps(
+                    mock_gps["lat"], mock_gps["lon"], event.zone_h3
+                )
+
+                # 4. Behavioral Analysis
+                behavior_result = await analyze_rider_behavior(
+                    session, str(rider.id), event.zone_h3
+                )
+
+                # Get recent claim timestamps for velocity calc
+                recent_timestamps = await get_recent_claim_timestamps(
+                    session, str(rider.id)
+                )
+
+                # 5. Create claim
                 now = datetime.now(timezone.utc)
                 hour = now.hour
                 srs = calculate_srs(event.event_type, event.severity, hour, event.zone_h3)
@@ -147,7 +182,7 @@ async def run_claim_pipeline(disruption_event_id: str) -> dict:
                 await session.flush()
                 claims_created += 1
 
-                # 4. Fraud check
+                # 6. Enhanced Fraud check with GPS + behavioral data
                 recent_claims_result = await session.execute(
                     select(Claim).where(Claim.rider_id == rider.id)
                 )
@@ -174,40 +209,73 @@ async def run_claim_pipeline(disruption_event_id: str) -> dict:
                     "rider_claim_count_last_8_weeks": recent_claims,
                     "zone_total_claimants": zone_claimants,
                     "zone_active_policies": zone_active_policies or 1,
+                    # Phase 3 enhanced fields
+                    "gps_lat": mock_gps["lat"],
+                    "gps_lon": mock_gps["lon"],
+                    "zone_center_lat": zone_center_lat,
+                    "zone_center_lon": zone_center_lon,
+                    "recent_claim_timestamps": recent_timestamps,
+                    "rider_avg_claim_interval_days": None,
                 }
                 fraud_result = await check_fraud(fraud_data)
 
-                if fraud_result.get("fraud_score", 0) > 0.7:
+                # Combine ML fraud score with GPS and behavioral flags
+                all_fraud_flags = fraud_result.get("flags", [])
+                all_fraud_flags.extend(gps_result.get("flags", []))
+                all_fraud_flags.extend(behavior_result.get("flags", []))
+
+                combined_fraud_score = fraud_result.get("fraud_score", 0)
+                # Boost fraud score if GPS or behavioral flags
+                if gps_result.get("status") == "spoofed":
+                    combined_fraud_score = min(1.0, combined_fraud_score + 0.3)
+                if behavior_result.get("behavioral_score", 0) > 0.6:
+                    combined_fraud_score = min(1.0, combined_fraud_score + 0.15)
+
+                if combined_fraud_score > 0.7:
                     claim.status = "fraud_check"
-                    claim.fraud_flags = fraud_result.get("flags", [])
+                    claim.fraud_flags = list(set(all_fraud_flags))
                     claims_fraud_flagged += 1
                     await update_zoink_score(session, rider, has_fraud_flags=True)
                 else:
                     claim.status = "approved"
                     claims_approved += 1
 
-                    # 5. Process payout
-                    payout_result = await process_payout(str(claim.id))
+                    # 7. Process instant payout
+                    payout_result = await process_payout(
+                        str(claim.id), calculated_payout, rider.name
+                    )
                     claim.razorpay_payment_id = payout_result["txn_id"]
                     claim.status = "paid"
                     total_payout += calculated_payout
+
+                    payout_details.append({
+                        "rider_name": rider.name,
+                        "amount": calculated_payout,
+                        "txn_id": payout_result["txn_id"],
+                        "upi_ref": payout_result.get("upi_ref"),
+                    })
 
                     await update_zoink_score(session, rider, has_fraud_flags=False)
 
                 await session.flush()
 
-                # 6. Audit log
+                # 8. Audit log with enhanced data
                 audit = AuditLog(
                     id=str(uuid.uuid4()),
                     entity_type="claim",
                     entity_id=str(claim.id),
-                    action="auto_claim_pipeline",
+                    action="auto_claim_pipeline_v3",
                     actor="system",
                     old_value=None,
                     new_value={
                         "status": claim.status,
                         "payout": calculated_payout,
-                        "fraud_score": fraud_result.get("fraud_score", 0),
+                        "fraud_score": combined_fraud_score,
+                        "gps_distance_km": gps_result.get("distance_km", 0),
+                        "gps_status": gps_result.get("status", "unknown"),
+                        "behavioral_score": behavior_result.get("behavioral_score", 0),
+                        "behavioral_risk": behavior_result.get("risk_level", "unknown"),
+                        "fraud_flags": all_fraud_flags,
                     },
                     created_at=now,
                 )
@@ -225,6 +293,8 @@ async def run_claim_pipeline(disruption_event_id: str) -> dict:
                 "claims_fraud_flagged": claims_fraud_flagged,
                 "total_payout": round(total_payout, 2),
                 "avg_payout": round(total_payout / max(claims_approved, 1), 2),
+                "payout_details": payout_details,
+                "pipeline_version": "3.0.0",
             }
             logger.info(f"Pipeline complete: {result_summary}")
             return result_summary

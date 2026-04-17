@@ -3,18 +3,17 @@ import { Toaster } from 'react-hot-toast';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from './store/useAuth';
 import OnboardingPage from './pages/OnboardingPage';
-import LoginPage from './pages/LoginPage';
 import RiderDashboard from './pages/RiderDashboard';
 import PolicyPage from './pages/PolicyPage';
 import ClaimsPage from './pages/ClaimsPage';
 import ProfilePage from './pages/ProfilePage';
-import SimPage from './pages/SimPage';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminRiders from './pages/admin/AdminRiders';
 import AdminClaims from './pages/admin/AdminClaims';
 import AdminDisruptions from './pages/admin/AdminDisruptions';
 import AdminSimulate from './pages/admin/AdminSimulate';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
 import BottomNav from './components/BottomNav';
 import './index.css';
 
@@ -45,16 +44,15 @@ export default function App() {
         position="top-center"
         toastOptions={{
           style: {
-            background: '#26292d',
-            color: '#f1f3f5',
-            border: '1px solid rgba(255,255,255,0.10)',
+            background: '#1E293B',
+            color: '#f1f5f9',
+            border: '1px solid #334155',
             fontFamily: 'Inter, sans-serif',
             fontSize: '14px',
             borderRadius: '12px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
           },
-          success: { iconTheme: { primary: '#51cf66', secondary: '#26292d' } },
-          error: { iconTheme: { primary: '#ff6b6b', secondary: '#26292d' } },
+          success: { iconTheme: { primary: '#14b8a6', secondary: '#0F172A' } },
+          error: { iconTheme: { primary: '#ef4444', secondary: '#0F172A' } },
         }}
       />
       <AnimatePresence mode="wait">
@@ -63,12 +61,6 @@ export default function App() {
           <Route path="/onboarding" element={
             <div className="app-container">
               <PageTransition><OnboardingPage /></PageTransition>
-            </div>
-          } />
-          
-          <Route path="/login" element={
-            <div className="app-container">
-              <PageTransition><LoginPage /></PageTransition>
             </div>
           } />
 
@@ -103,16 +95,6 @@ export default function App() {
               </div>
             </ProtectedRoute>
           } />
-          <Route path="/sim" element={
-            <ProtectedRoute>
-              <div className="app-container">
-                <main className="app-main">
-                  <PageTransition><SimPage /></PageTransition>
-                </main>
-                <BottomNav />
-              </div>
-            </ProtectedRoute>
-          } />
           <Route path="/profile" element={
             <ProtectedRoute>
               <div className="app-container">
@@ -132,6 +114,7 @@ export default function App() {
             <Route path="claims" element={<AdminClaims />} />
             <Route path="disruptions" element={<AdminDisruptions />} />
             <Route path="simulate" element={<AdminSimulate />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
           </Route>
 
           {/* Default redirect */}

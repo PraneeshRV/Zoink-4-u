@@ -2,11 +2,11 @@
 
 **Parametric Income-Loss Insurance for Food Delivery Partners in India**
 
-**Guidewire DEVTrails 2026 | Phase 2 Final Submission | March 2026**
+**Guidewire DEVTrails 2026 | Phase 3 Final Submission | April 2026**
 
-[![Phase](https://img.shields.io/badge/Phase-1%20|%20Ideation%20%26%20Foundation-blue)]()
+[![Phase](https://img.shields.io/badge/Phase-3%20|%20Scale%20%26%20Optimise-blue)]()
 [![Persona](https://img.shields.io/badge/Persona-Food%20Delivery%20Partners-orange)]()
-[![Premium](https://img.shields.io/badge/Weekly%20Premium-₹29–₹69-purple)]()
+[![Premium](https://img.shields.io/badge/Weekly%20Premium-₹29–₹99-purple)]()
 [![Platform](https://img.shields.io/badge/Platform-WhatsApp%20Bot%20%2B%20Web%20PWA-green)]()
 [![Triggers](https://img.shields.io/badge/Parametric%20Triggers-25%2B%20Defined-red)]()
 
@@ -790,12 +790,15 @@ Our fraud detection architecture is designed for data minimisation by default. I
 
 ### Phase 3: Scale and Polish (April 5-17)
 
-- [ ] Advanced fraud detection: GNN ring detection + Behavioral Physics pipeline
-- [ ] LSTM disruption forecaster (7-day zone-level predictions)
-- [ ] Rider analytics dashboard (earnings trends, Zoink Score, coverage history, disruption calendar)
-- [ ] Admin dashboard (loss ratios, zone heatmaps, fraud queue, forecast visualizations)
-- [ ] Multi-language support: English, Hindi, Tamil, Telugu, Kannada etc
-- [ ] Final demo video and pitch deck
+- [x] Advanced fraud detection: GNN ring detection + Behavioral Physics pipeline
+- [x] LSTM disruption forecaster (7-day zone-level predictions)
+- [x] Rider analytics dashboard (earnings trends, Zoink Score, coverage history, disruption calendar)
+- [x] Admin dashboard (loss ratios, zone heatmaps, fraud queue, forecast visualizations)
+- [x] GPS validation and anti-spoofing system
+- [x] NASA EONET real-time disaster event integration
+- [x] Razorpay sandbox instant payout simulation
+- [x] Predictive analytics and zone risk heatmaps
+- [x] Final demo video and pitch deck
 
 ---
 
@@ -812,7 +815,6 @@ Our fraud detection architecture is designed for data minimisation by default. I
 ## Links
 
 - **GitHub:** [https://github.com/PraneeshRV/Zoink-4-u](https://github.com/PraneeshRV/Zoink-4-u)
-- **Demo Video (Phase 1):** [Coming Soon]
 - **Live Prototype:** https://zoink4u.praneeshrv.me
 
 ---

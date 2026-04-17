@@ -1,7 +1,8 @@
-"""Premium calculation using DGRI formula."""
+"""Premium calculation — ML-powered with trained GradientBoosting model."""
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from app.services.premium_model import predict_premium, TIER_ENCODING
 
 router = APIRouter(tags=["Premium"])
 
@@ -29,14 +30,12 @@ class PremiumResponse(BaseModel):
 @router.post("/premium/calculate", response_model=PremiumResponse)
 async def calculate_premium(req: PremiumRequest):
     try:
-        base = BASE_RATES.get(req.tier, 29)
-
-        # Zone risk factor: hash zone_h3 to float 0.8-1.4
+        # Compute zone risk
         try:
             zone_seed = int(req.zone_h3[-4:], 16) % 100
         except (ValueError, IndexError):
             zone_seed = 50
-        zone_risk = round(0.8 + (zone_seed / 166.0), 4)
+        zone_risk = 0.3 + (zone_seed / 150.0)
 
         # Seasonal factor
         month = datetime.now().month
@@ -47,35 +46,41 @@ async def calculate_premium(req: PremiumRequest):
         else:
             seasonal = 1.0
 
-        # Exposure multiplier
-        hours = max(req.work_hours_per_week, 1)
-        exposure = round((hours / 40.0) ** 1.1, 4)
+        # Exposure
+        exposure_norm = min(req.work_hours_per_week / 60.0, 1.2)
 
-        # Trust factor from zoink_score
-        trust = round(1.0 - ((req.zoink_score - 50) / 200.0), 4)
-        trust = max(0.75, min(1.25, trust))
+        # Zoink score normalized
+        zoink_norm = req.zoink_score / 100.0
 
-        raw_premium = base * zone_risk * seasonal * exposure * trust
+        # Tier encoding
+        tier_enc = float(TIER_ENCODING.get(req.tier, 0))
 
-        # Cap at 2% of estimated weekly earnings
-        est_weekly_earnings = hours * 80
-        cap = est_weekly_earnings * 0.02
-        final_premium = round(min(raw_premium, cap), 2)
+        # Historical claim rate proxy
+        hist_claim_rate = 0.10 + (zone_seed / 500.0)
 
-        return PremiumResponse(
-            premium_rs=final_premium,
-            zone_risk=zone_risk,
-            seasonal_factor=seasonal,
-            exposure_mult=exposure,
-            trust_factor=trust,
-            breakdown={
-                "base_rate": base,
-                "raw_premium": round(raw_premium, 2),
-                "cap": round(cap, 2),
-                "est_weekly_earnings": est_weekly_earnings,
-                "tier": req.tier,
-                "zone_h3": req.zone_h3,
-            },
+        # Tenure (default moderate)
+        tenure_norm = 0.5
+
+        # Traffic baseline
+        traffic_norm = 0.3 + (zone_seed / 200.0)
+
+        features = [
+            zone_risk,
+            seasonal,
+            exposure_norm,
+            zoink_norm,
+            tier_enc,
+            hist_claim_rate,
+            tenure_norm,
+            traffic_norm,
+        ]
+
+        result = predict_premium(
+            features,
+            tier=req.tier,
+            work_hours_per_week=req.work_hours_per_week,
         )
+
+        return PremiumResponse(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
